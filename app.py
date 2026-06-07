@@ -16,7 +16,8 @@ from strategies.ma_strategy   import ma_crossover_strategy, get_strategy_name as
 from strategies.rsi_strategy  import rsi_strategy, rsi_reversal_strategy, get_strategy_name as rsi_name, get_strategy_description as rsi_desc
 from strategies.macd_strategy import macd_crossover_strategy, get_strategy_name as macd_name, get_strategy_description as macd_desc
 
-from modules.ui_components   import inject_css, page_header, disclaimer, kpi_card, section_header
+from modules.ui_components   import (inject_css, page_header, disclaimer, kpi_card,
+                                      section_header, sidebar_logo, sidebar_section)
 from modules.market_dashboard import get_market_overview
 from modules.explainability   import generate_dashboard_narrative
 
@@ -31,17 +32,10 @@ inject_css()
 # 側邊欄
 # ══════════════════════════════════════════
 with st.sidebar:
-    st.markdown("""
-    <div style="padding:1rem 0.5rem 0.5rem;">
-        <div style="font-size:1rem;font-weight:800;color:#E2E8F0;">📊 台灣股票智能分析平台</div>
-        <div style="font-size:0.7rem;color:#64748B;margin-top:0.2rem;">Taiwan Equity Intelligence Platform</div>
-    </div>
-    <hr style="border-color:#1E293B;margin:0.5rem 0 1rem;">
-    """, unsafe_allow_html=True)
+    sidebar_logo()
 
-    st.markdown('<div style="font-size:0.65rem;color:#475569;text-transform:uppercase;letter-spacing:0.08em;padding:0 0.3rem 0.3rem;">策略回測設定</div>', unsafe_allow_html=True)
-
-    ticker_input = st.text_input("股票代號", value="2330", placeholder="例如：2330、2317、0050")
+    sidebar_section("策略回測設定")
+    ticker_input = st.text_input("股票代號", value="2330", placeholder="例：2330、2317、0050")
 
     period_options = {"近6個月":"6mo","近1年":"1y","近2年":"2y","近5年":"5y"}
     selected_period_label = st.selectbox("資料期間", list(period_options.keys()), index=2)
@@ -49,18 +43,14 @@ with st.sidebar:
 
     force_refresh = st.checkbox("強制重新下載資料", value=False)
 
-    st.markdown('<hr style="border-color:#1E293B;margin:0.8rem 0;">', unsafe_allow_html=True)
-    st.markdown('<div style="font-size:0.65rem;color:#475569;text-transform:uppercase;letter-spacing:0.08em;padding:0 0.3rem 0.3rem;">圖表顯示</div>', unsafe_allow_html=True)
-
+    sidebar_section("圖表顯示")
     show_ma     = st.checkbox("顯示均線（MA5/20/60）", value=True)
     show_volume = st.checkbox("顯示成交量", value=True)
     show_rsi    = st.checkbox("顯示 RSI", value=True)
     show_macd   = st.checkbox("顯示 MACD", value=True)
     show_kd     = st.checkbox("顯示 KD", value=False)
 
-    st.markdown('<hr style="border-color:#1E293B;margin:0.8rem 0;">', unsafe_allow_html=True)
-    st.markdown('<div style="font-size:0.65rem;color:#475569;text-transform:uppercase;letter-spacing:0.08em;padding:0 0.3rem 0.3rem;">策略選擇</div>', unsafe_allow_html=True)
-
+    sidebar_section("策略選擇")
     strategy_options = {
         "MA 均線交叉策略（MA5×MA20）":    "ma",
         "RSI 回拉確認策略（推薦）":         "rsi_reversal",
@@ -74,16 +64,14 @@ with st.sidebar:
                                        max_value=10_000_000, value=100_000,
                                        step=10_000, format="%d")
 
-    st.markdown('<hr style="border-color:#1E293B;margin:0.8rem 0;">', unsafe_allow_html=True)
-    st.markdown('<div style="font-size:0.65rem;color:#475569;text-transform:uppercase;letter-spacing:0.08em;padding:0 0.3rem 0.3rem;">風險管理</div>', unsafe_allow_html=True)
-
+    sidebar_section("風險管理")
     stop_loss_pct   = st.slider("停損比例（%）",   0, 20, 0, 1)
     stop_profit_pct = st.slider("停利比例（%）",   0, 50, 0, 1)
     sl_str = f"停損 {stop_loss_pct}%" if stop_loss_pct else "停損：未啟用"
     sp_str = f"停利 {stop_profit_pct}%" if stop_profit_pct else "停利：未啟用"
-    st.caption(f"{sl_str}　|　{sp_str}　|　整張交易（1000股）")
+    st.caption(f"{sl_str} · {sp_str} · 整張交易（1000股）")
 
-    st.markdown('<hr style="border-color:#1E293B;margin:0.8rem 0;">', unsafe_allow_html=True)
+    st.markdown('<div style="height:0.5rem;"></div>', unsafe_allow_html=True)
     run_button = st.button("▶  開始回測分析", type="primary", use_container_width=True)
 
 # ══════════════════════════════════════════
@@ -91,17 +79,41 @@ with st.sidebar:
 # ══════════════════════════════════════════
 if not run_button:
     st.markdown("""
-    <div style="padding:1.5rem 0 0.5rem;">
-        <div style="font-size:0.7rem;font-weight:700;color:#1E40AF;text-transform:uppercase;
-                    letter-spacing:0.1em;margin-bottom:0.4rem;">金融科技研究平台</div>
-        <div style="font-size:2rem;font-weight:900;color:#0F172A;letter-spacing:-0.02em;line-height:1.1;">
-            台灣股票智能分析平台
+    <div style="padding:0.5rem 0 1.25rem;border-bottom:1px solid #E2E8F0;margin-bottom:1.5rem;">
+        <div style="font-size:0.62rem;font-weight:700;color:#1E40AF;text-transform:uppercase;
+                    letter-spacing:0.14em;margin-bottom:0.5rem;">
+            Taiwan Equity Intelligence Platform
         </div>
-        <div style="font-size:0.95rem;color:#475569;margin-top:0.4rem;max-width:700px;">
-            整合市場動能、法人籌碼、基本面因子與策略驗證，建立資料驅動的投資分析決策流程。
+        <div style="font-size:2.2rem;font-weight:900;color:#0F172A;
+                    letter-spacing:-0.03em;line-height:1.1;margin-bottom:0.5rem;">
+            台灣股票量化研究平台
         </div>
-        <div style="font-size:0.8rem;color:#94A3B8;margin-top:0.3rem;">
-            Taiwan Equity Intelligence Platform · FinTech Research Portfolio Project
+        <div style="font-size:0.875rem;color:#475569;line-height:1.65;max-width:680px;
+                    margin-bottom:0.6rem;">
+            整合市場動能、法人籌碼、基本面因子、多因子回測與投資組合風險管理，
+            建立機構級別的資料驅動投資分析流程。
+        </div>
+        <div style="display:flex;gap:0.5rem;flex-wrap:wrap;">
+            <span style="background:#DBEAFE;color:#1D4ED8;padding:0.15rem 0.6rem;
+                         border-radius:999px;font-size:0.67rem;font-weight:700;">
+                Yahoo Finance
+            </span>
+            <span style="background:#DBEAFE;color:#1D4ED8;padding:0.15rem 0.6rem;
+                         border-radius:999px;font-size:0.67rem;font-weight:700;">
+                TWSE 官方資料
+            </span>
+            <span style="background:#DBEAFE;color:#1D4ED8;padding:0.15rem 0.6rem;
+                         border-radius:999px;font-size:0.67rem;font-weight:700;">
+                FinMind API
+            </span>
+            <span style="background:#F0FDF4;color:#16A34A;padding:0.15rem 0.6rem;
+                         border-radius:999px;font-size:0.67rem;font-weight:700;">
+                T+1 無未來函數
+            </span>
+            <span style="background:#F0FDF4;color:#16A34A;padding:0.15rem 0.6rem;
+                         border-radius:999px;font-size:0.67rem;font-weight:700;">
+                Walk-Forward 驗證
+            </span>
         </div>
     </div>
     """, unsafe_allow_html=True)
@@ -255,31 +267,50 @@ if not run_button:
 
     st.markdown("")
 
-    # ── 產品定位 ──
-    section_header("產品設計思維")
-    pt1,pt2,pt3,pt4 = st.columns(4)
-    pt1.markdown("""<div class="kpi-card" style="border-top:3px solid #DC2626;">
-        <div class="kpi-label">使用者痛點</div>
-        <div style="font-size:0.8rem;color:#334155;margin-top:0.4rem;line-height:1.6;">
-        散戶投資者常面臨資訊分散、判斷主觀、缺乏回測驗證與風險控管不足的問題。
-        </div></div>""", unsafe_allow_html=True)
-    pt2.markdown("""<div class="kpi-card" style="border-top:3px solid #1E40AF;">
-        <div class="kpi-label">產品解法</div>
-        <div style="font-size:0.8rem;color:#334155;margin-top:0.4rem;line-height:1.6;">
-        整合市場動能、法人籌碼、基本面因子、技術分析與策略驗證，建立資料驅動的投資決策流程。
-        </div></div>""", unsafe_allow_html=True)
-    pt3.markdown("""<div class="kpi-card" style="border-top:3px solid #16A34A;">
-        <div class="kpi-label">目標使用者</div>
-        <div style="font-size:0.8rem;color:#334155;margin-top:0.4rem;line-height:1.6;">
-        ▸ 金融科技學習者<br>▸ 主動投資者<br>▸ 金融分析學生<br>▸ 希望建立資料化投資流程者
-        </div></div>""", unsafe_allow_html=True)
-    pt4.markdown("""<div class="kpi-card" style="border-top:3px solid #F59E0B;">
-        <div class="kpi-label">平台指標</div>
-        <div style="font-size:0.8rem;color:#334155;margin-top:0.4rem;line-height:1.6;">
-        ▸ <b>10 個</b>分析模組<br>▸ <b>4 種</b>回測策略<br>▸ <b>4 個</b>資料來源<br>▸ <b>T+1</b> 無未來函數回測
-        </div></div>""", unsafe_allow_html=True)
+    # ── 平台概覽 ──
+    section_header("平台研究能力")
+    pt1, pt2, pt3, pt4 = st.columns(4)
+    pt1.markdown("""
+    <div class="kpi-card" style="border-top:3px solid #DC2626;">
+        <div class="kpi-label">研究痛點</div>
+        <div style="font-size:0.81rem;color:#334155;margin-top:0.5rem;line-height:1.7;">
+            散戶常面臨資訊分散、判斷主觀、缺乏嚴格回測驗證與風險量化不足的問題。
+        </div>
+    </div>""", unsafe_allow_html=True)
+    pt2.markdown("""
+    <div class="kpi-card" style="border-top:3px solid #1E40AF;">
+        <div class="kpi-label">解決方案</div>
+        <div style="font-size:0.81rem;color:#334155;margin-top:0.5rem;line-height:1.7;">
+            整合市場動能、法人籌碼、基本面因子與多因子模型，建立資料驅動決策流程。
+        </div>
+    </div>""", unsafe_allow_html=True)
+    pt3.markdown("""
+    <div class="kpi-card" style="border-top:3px solid #16A34A;">
+        <div class="kpi-label">研究方法</div>
+        <div style="font-size:0.81rem;color:#334155;margin-top:0.5rem;line-height:1.7;">
+            ▸ IC / Walk-Forward 驗證<br>
+            ▸ VaR · CVaR · Beta/Alpha<br>
+            ▸ Hurst 指數 · Jarque-Bera<br>
+            ▸ T+1 無未來函數回測
+        </div>
+    </div>""", unsafe_allow_html=True)
+    pt4.markdown("""
+    <div class="kpi-card" style="border-top:3px solid #F59E0B;">
+        <div class="kpi-label">平台規模</div>
+        <div style="font-size:0.81rem;color:#334155;margin-top:0.5rem;line-height:1.7;">
+            ▸ <b>14 個</b>分析模組<br>
+            ▸ <b>4 種</b>策略回測<br>
+            ▸ <b>3 個</b>外部資料來源<br>
+            ▸ <b>5 個</b>量化研究模組
+        </div>
+    </div>""", unsafe_allow_html=True)
 
-    st.markdown('<div style="text-align:center;font-size:0.72rem;color:#94A3B8;padding:1.5rem 0;">台灣股票智能分析平台 ｜ 資料：Yahoo Finance + TWSE + FinMind ｜ 僅供學術研究與作品集展示</div>', unsafe_allow_html=True)
+    st.markdown("""
+    <div style="text-align:center;font-size:0.7rem;color:#94A3B8;
+                padding:1.75rem 0 0.5rem;border-top:1px solid #F1F5F9;margin-top:1rem;">
+        台灣股票量化研究平台 ｜ 資料：Yahoo Finance · TWSE · FinMind ｜ 僅供學術研究與作品集展示
+    </div>
+    """, unsafe_allow_html=True)
     st.stop()
 
 # ══════════════════════════════════════════

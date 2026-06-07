@@ -14,14 +14,17 @@ from modules.portfolio_risk import (fetch_portfolio_data, calc_historical_var,
                                      calc_cvar, calc_beta_alpha, calc_portfolio_metrics,
                                      calc_correlation_matrix, stress_test,
                                      calc_weights_from_input)
-from modules.ui_components  import inject_css, page_header, disclaimer, section_header
+from modules.ui_components  import (inject_css, page_header, disclaimer, section_header,
+                                     sidebar_logo, sidebar_section,
+                                     research_summary, research_insight)
 
 st.set_page_config(page_title="投資組合風險引擎", page_icon="⚖️", layout="wide")
 inject_css()
 
 with st.sidebar:
-    st.markdown('<div style="padding:1rem 0.5rem;"><div style="font-size:0.9rem;font-weight:800;color:#E2E8F0;">⚖️ 投資組合風險引擎</div><div style="font-size:0.7rem;color:#64748B;">Portfolio Risk Engine</div></div><hr style="border-color:#1E293B;">', unsafe_allow_html=True)
-    st.markdown('<div style="font-size:0.72rem;color:#94A3B8;padding:0.3rem 0;">輸入最多 6 支股票，系統自動納入 0050 為基準</div>', unsafe_allow_html=True)
+    sidebar_logo()
+    sidebar_section("組合設定")
+    st.markdown('<div style="font-size:0.72rem;color:#64748B;padding:0.2rem 0 0.4rem;">最多 6 支股票，系統自動納入 0050 為基準</div>', unsafe_allow_html=True)
 
     n_stocks = st.number_input("股票數量", 2, 6, 3, 1)
     tickers, amounts = [], []
@@ -34,12 +37,32 @@ with st.sidebar:
         tickers.append(t.strip().upper())
         amounts.append(float(a))
 
+    sidebar_section("風險參數")
     period    = st.selectbox("分析期間", ["1y", "2y", "3y"], index=1)
     var_conf  = st.selectbox("VaR 信心水準", [0.95, 0.99], format_func=lambda x: f"{int(x*100)}%")
     run = st.button("⚖️ 計算風險指標", type="primary", use_container_width=True)
 
-page_header("投資組合風險引擎", "VaR · CVaR · Beta/Alpha（CAPM）· 壓力測試 · 相關矩陣", "⚖️")
+page_header(
+    "投資組合風險引擎",
+    "VaR · CVaR · Beta/Alpha（CAPM）· 壓力測試 · 相關矩陣",
+    "⚖️",
+    meta=["Historical VaR", "CAPM", "Stress Test", "Correlation"]
+)
 disclaimer()
+research_summary(
+    findings=[
+        "Historical VaR（歷史模擬法）：以實際歷史報酬分佈計算特定信心水準下的最大日損失，優點是不假設報酬正態性",
+        "CVaR / Expected Shortfall：VaR 尾部以外損失的條件期望值，更完整刻畫極端風險，為 Basel III 官方推薦指標",
+        "CAPM 分解（Beta / Alpha）：Beta 衡量相對 0050 的系統性風險暴露；正 Alpha 代表扣除市場報酬後的超額績效",
+        "壓力測試：模擬台股歷史重大事件（金融海嘯、COVID-19、台積電大跌等）下的組合損失，揭露極端情境下的脆弱性",
+        "相關矩陣分析：高度相關的股票組合分散效果有限；理想組合應包含低相關資產以降低系統性風險暴露",
+    ],
+    risks=[
+        "歷史模擬法假設過去分佈代表未來，黑天鵝事件或結構性市場轉變會使模型失準",
+        "台灣市場無風險利率採用央行基準利率 1.5%，市場基準採用 0050.TW 元大台灣 50",
+    ],
+    analyst_note="Sharpe > 1.0、CVaR < 3%、相關性 < 0.7 的組合，具備機構級風險管理標準。"
+)
 
 if not run:
     st.info("👈 輸入股票組合與金額，按下「計算風險指標」")
@@ -280,3 +303,32 @@ if stress:
     </div>""", unsafe_allow_html=True)
 
 st.caption("風險指標採用歷史模擬法，不依賴常態分佈假設。壓力測試結果為估算，不代表實際未來損益。")
+
+# ── 研究洞察 ──────────────────────────────────────────────────────────────────
+sharpe_v = metrics.get("sharpe_ratio") or 0
+beta_v   = beta_alpha.get("beta") or 0
+cvar_v   = cvar_result.get("cvar_pct") or 0
+
+if sharpe_v >= 1.5 and avg_corr <= 0.6:
+    sig = "風險調整優良"
+elif sharpe_v >= 1.0 and avg_corr <= 0.7:
+    sig = "風險結構合理"
+else:
+    sig = "建議優化組合"
+
+portfolio_names = "、".join(valid_tickers[:4])
+research_insight(
+    key_finding=(
+        f"組合（{portfolio_names}）年化 Sharpe {sharpe_v:.3f}，"
+        f"Beta {beta_v:.3f}（相對 0050），"
+        f"CVaR {abs(cvar_v):.2f}%，"
+        f"平均相關係數 {avg_corr:.3f}"
+    ),
+    implication=(
+        "Beta < 1 代表防禦型組合，市場下跌時損失相對較小；"
+        "正 Alpha 代表組合具備超越市場基準的選股能力。"
+        "CVaR 反映極端情況下的平均損失，應與壓力測試結果共同評估尾部風險。"
+    ),
+    signal=sig,
+    next_step="將本次風險分析匯出至第 14 頁研究報告，作為投資組合風險章節的量化依據。"
+)

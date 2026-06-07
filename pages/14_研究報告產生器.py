@@ -19,28 +19,50 @@ from modules.portfolio_risk import (fetch_portfolio_data, calc_historical_var,
                                      stress_test, calc_weights_from_input)
 from modules.finmind_data  import parse_financial_summary
 from modules.report_generator import build_report_html, report_to_bytes
-from modules.ui_components import inject_css, page_header, disclaimer, section_header
+from modules.ui_components import (inject_css, page_header, disclaimer, section_header,
+                                    sidebar_logo, sidebar_section, research_summary)
 
 st.set_page_config(page_title="研究報告產生器", page_icon="📄", layout="wide")
 inject_css()
 
 with st.sidebar:
-    st.markdown('<div style="padding:1rem 0.5rem;"><div style="font-size:0.9rem;font-weight:800;color:#E2E8F0;">📄 研究報告產生器</div><div style="font-size:0.7rem;color:#64748B;">Research Report Generator</div></div><hr style="border-color:#1E293B;">', unsafe_allow_html=True)
+    sidebar_logo()
+    sidebar_section("報告目標")
     ticker  = st.text_input("主要分析股票", value="2330")
     period  = st.selectbox("資料期間", ["1y", "2y", "3y"], index=1)
 
-    st.markdown('<hr style="border-color:#1E293B;margin:0.5rem 0;"><div style="font-size:0.65rem;color:#475569;text-transform:uppercase;">報告選項</div>', unsafe_allow_html=True)
+    sidebar_section("報告章節")
     include_dq    = st.checkbox("資料品質驗證", value=True)
     include_mf    = st.checkbox("多因子回測分析", value=True)
     include_risk  = st.checkbox("個股風險分析", value=True)
     include_fund  = st.checkbox("基本面摘要（FinMind）", value=True)
+
+    sidebar_section("作者資訊")
     author_name   = st.text_input("作者姓名", value="")
     institution   = st.text_input("機構 / 學校", value="")
 
     generate = st.button("📄 產生研究報告", type="primary", use_container_width=True)
 
-page_header("研究報告產生器", "整合資料驗證 · 多因子分析 · 風險指標 · 一鍵匯出 HTML", "📄")
+page_header(
+    "研究報告產生器",
+    "整合資料驗證 · 多因子分析 · 風險指標 · 一鍵匯出學術 HTML 報告",
+    "📄",
+    meta=["Academic Report", "HTML Export", "PDF Ready"]
+)
 disclaimer()
+research_summary(
+    findings=[
+        "報告整合四大研究層面：資料品質驗證 → 多因子 IC 分析 → 投資組合風險量化 → 基本面評估",
+        "報告格式採用自包含 HTML（inline CSS），可直接在瀏覽器開啟，並透過 Ctrl+P 列印為 PDF",
+        "執行摘要由系統自動依據數據生成，包含資料品質評分、最強因子、VaR、Alpha、殖利率等關鍵指標",
+        "研究方法遵循 T+1 執行原則，Walk-Forward 驗證，歷史模擬法 VaR，避免未來函數偏誤",
+    ],
+    risks=[
+        "FinMind API 需要有效 Token 才能取得財務報表數據，若 Token 失效將顯示模擬數據",
+        "報告中所有指標均基於歷史數據，不代表未來績效，請在報告中清楚標示研究限制",
+    ],
+    analyst_note="完整報告（含 8 個章節）可作為研究所推甄作品集附件，展示系統性量化研究能力。"
+)
 
 if not generate:
     st.info("👈 設定參數後按下「產生研究報告」")

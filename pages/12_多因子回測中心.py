@@ -16,7 +16,9 @@ from modules.multi_factor import (compute_factor_matrix, normalize_factors,
                                    calc_all_factor_ics, build_composite_signal,
                                    composite_to_signal, walk_forward_backtest,
                                    ic_weighted_factors)
-from modules.ui_components import inject_css, page_header, disclaimer, section_header
+from modules.ui_components import (inject_css, page_header, disclaimer, section_header,
+                                    sidebar_logo, sidebar_section,
+                                    research_summary, research_insight)
 
 st.set_page_config(page_title="多因子回測中心", page_icon="🧬", layout="wide")
 inject_css()
@@ -30,11 +32,12 @@ FACTOR_LABELS = {
 }
 
 with st.sidebar:
-    st.markdown('<div style="padding:1rem 0.5rem;"><div style="font-size:0.9rem;font-weight:800;color:#E2E8F0;">🧬 多因子回測中心</div><div style="font-size:0.7rem;color:#64748B;">Multi-Factor Backtesting</div></div><hr style="border-color:#1E293B;">', unsafe_allow_html=True)
+    sidebar_logo()
+    sidebar_section("分析設定")
     ticker  = st.text_input("股票代號", value="2330")
     period  = st.selectbox("資料期間", ["1y", "2y", "3y"], index=1)
 
-    st.markdown('<div style="font-size:0.65rem;color:#475569;text-transform:uppercase;padding:0.3rem 0;">因子權重設定</div>', unsafe_allow_html=True)
+    sidebar_section("因子權重")
     use_ic_weight = st.checkbox("自動 IC 加權（研究建議）", value=True)
 
     if not use_ic_weight:
@@ -54,7 +57,7 @@ with st.sidebar:
     else:
         manual_weights = None
 
-    st.markdown('<hr style="border-color:#1E293B;margin:0.6rem 0;">', unsafe_allow_html=True)
+    sidebar_section("回測參數")
     buy_thr  = st.slider("買進門檻（Composite）", 0.1, 0.8, 0.3, 0.05)
     sell_thr = st.slider("賣出門檻（Composite）", -0.8, -0.1, -0.3, 0.05)
     capital  = st.number_input("初始資金（元）", 50_000, 2_000_000, 100_000, 50_000)
@@ -62,8 +65,26 @@ with st.sidebar:
 
     run = st.button("🧬 開始多因子分析", type="primary", use_container_width=True)
 
-page_header("多因子回測中心", "因子 IC 分析 · ICIR 顯著性 · Walk-Forward 樣本外驗證", "🧬")
+page_header(
+    "多因子回測中心",
+    "因子 IC 分析 · ICIR 顯著性 · Walk-Forward 樣本外驗證",
+    "🧬",
+    meta=["Factor IC", "Walk-Forward", "IS/OOS Split"]
+)
 disclaimer()
+research_summary(
+    findings=[
+        "IC（Information Coefficient）= Spearman 秩相關，衡量因子對次日報酬的預測能力；|IC| > 0.05 具統計意義，> 0.10 屬高品質因子",
+        "ICIR（IC / IC 標準差）衡量因子穩定性；ICIR > 0.5 表示因子訊號具備持續性，不易受市場環境影響",
+        "Walk-Forward 驗證：將歷史數據切分為樣本內（IS）與樣本外（OOS）兩段，OOS 績效反映真實預測能力，避免過度擬合",
+        "複合因子（Composite Signal）以 IC 加權合成，權重較高的因子對最終訊號影響更大，建議選取 IC 穩定的因子組合",
+    ],
+    risks=[
+        "因子衰減風險：高 IC 因子可能在 OOS 期間快速失效，特別是短期動能因子在市場轉折時容易反轉",
+        "單一標的回測存在選擇性偏差，建議在多支股票上同步驗證因子的一致性（Generalizability）",
+    ],
+    analyst_note="IC IR > 0.5 且樣本外夏普比率 > 1.0 的因子組合，才具備實盤部署的研究基礎。"
+)
 
 if not run:
     st.info("👈 設定因子權重與回測參數，按下「開始多因子分析」")
@@ -286,3 +307,34 @@ mode_str = "IC 自動加權（|ICIR| 正規化）" if use_ic_weight else "手動
 st.caption(f"權重來源：{mode_str}。IC 加權邏輯：預測力越強的因子獲得越高比重，IC 為負的因子權重設為 0。")
 
 st.caption("資料來源：Yahoo Finance ｜ 回測遵循 T+1 執行原則，今日訊號隔日開盤成交，避免未來函數偏誤")
+
+# ── 研究洞察 ──────────────────────────────────────────────────────────────────
+ic_stats = ic_result.get("ic_stats", ic_result)
+valid_ics = {k: v for k, v in ic_stats.items() if not k.startswith("_") and isinstance(v, dict)}
+best_factor = max(valid_ics, key=lambda k: abs(valid_ics[k].get("ic_mean", 0)), default="")
+best_ic = valid_ics.get(best_factor, {}).get("ic_mean", 0) if best_factor else 0
+oos_sharpe = (wf_result or {}).get("out_of_sample", {}).get("sharpe_ratio")
+oos_return  = (wf_result or {}).get("out_of_sample", {}).get("total_return")
+
+if best_ic and abs(best_ic) >= 0.10:
+    sig = "因子品質優良"
+elif best_ic and abs(best_ic) >= 0.05:
+    sig = "因子品質中等"
+else:
+    sig = "因子品質待改善"
+
+best_label = FACTOR_LABELS.get(best_factor, best_factor)
+oos_txt = f"OOS 夏普 {oos_sharpe:.3f}、報酬 {oos_return:.2f}%" if oos_sharpe is not None else "OOS 數據待跑"
+
+research_insight(
+    key_finding=(
+        f"最強因子：{best_label}（IC = {best_ic:+.4f}）；"
+        f"複合訊號 Walk-Forward 驗證：{oos_txt}"
+    ),
+    implication=(
+        "IC > 0.05 的因子組合具備統計顯著性，可考慮納入正式策略；"
+        "若 OOS Sharpe > 1.0 且降幅 < 0.5，策略泛化能力良好，可進一步做多股票交叉驗證。"
+    ),
+    signal=sig,
+    next_step="將本次多因子分析結果儲存至第 14 頁研究報告，作為 Alpha 因子研究章節的核心依據。"
+)

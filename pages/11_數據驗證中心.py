@@ -13,25 +13,46 @@ from utils.indicators      import add_all_indicators
 from modules.data_quality  import (assess_data_quality, check_ohlc_consistency,
                                     detect_outliers, check_stationarity,
                                     calc_jarque_bera, cross_validate_sources)
-from modules.ui_components import inject_css, page_header, disclaimer, section_header
+from modules.ui_components import (inject_css, page_header, disclaimer, section_header,
+                                    sidebar_logo, sidebar_section,
+                                    research_summary, research_insight)
 
 st.set_page_config(page_title="數據驗證中心", page_icon="🔎", layout="wide")
 inject_css()
 
 with st.sidebar:
-    st.markdown('<div style="padding:1rem 0.5rem;"><div style="font-size:0.9rem;font-weight:800;color:#E2E8F0;">🔎 數據驗證中心</div><div style="font-size:0.7rem;color:#64748B;">Data Validation Center</div></div><hr style="border-color:#1E293B;">', unsafe_allow_html=True)
+    sidebar_logo()
+    sidebar_section("驗證設定")
     ticker   = st.text_input("股票代號", value="2330")
     period   = st.selectbox("資料期間", ["1y", "2y", "3y"], index=1)
     run = st.button("▶ 開始驗證", type="primary", use_container_width=True)
-    st.markdown("""<div style="font-size:0.72rem;color:#64748B;padding:0.5rem;">
-    <b>為什麼需要資料驗證？</b><br>
-    資料品質直接影響策略訊號可信度。<br>
-    OHLC 不一致、異常值、過高峰度<br>
-    均會造成回測結果失真。
+    sidebar_section("模組說明")
+    st.markdown("""
+    <div style="font-size:0.75rem;color:#64748B;padding:0.3rem 0;line-height:1.7;">
+        資料品質是量化研究的第一道防線。<br>
+        OHLC 錯誤、異常值與非常態性<br>
+        均可能造成回測結果失真。
     </div>""", unsafe_allow_html=True)
 
-page_header("數據驗證中心", "OHLC 一致性 · 異常值偵測 · 統計特性 · 跨來源驗證", "🔎")
+page_header(
+    "數據驗證中心",
+    "OHLC 一致性 · 異常值偵測 · 統計特性 · 跨來源驗證",
+    "🔎",
+    meta=["Data Quality", "Stationarity", "Cross-Validation"]
+)
 disclaimer()
+research_summary(
+    findings=[
+        "OHLC 一致性驗證：確保高低開收邏輯正確（H ≥ max(O,C)、L ≤ min(O,C)），篩除資料管道錯誤與除權調整問題",
+        "Hurst 指數（R/S 分析）：H > 0.55 代表趨勢持續性市場，H < 0.45 代表均值回歸特性，對策略選擇至關重要",
+        "Jarque-Bera 常態性檢定：金融報酬呈現厚尾（excess kurtosis > 0），違反 OLS 常態假設，影響 VaR 等模型精度",
+        "跨來源交叉比對：yfinance 與 TWSE 官方資料差異，可揭露除息未還原、股本調整等系統性資料誤差",
+    ],
+    risks=[
+        "資料驗證基於 Yahoo Finance，若 TWSE 官方資料差異 > 2%，建議以官方資料為準，並確認除息/除權調整設定",
+    ],
+    analyst_note="資料品質分數（Grade A+ ～ D）反映整體可信度；低品質資料應在研究報告中明確揭露。"
+)
 
 if not run:
     st.info("👈 輸入股票代號，按下「開始驗證」以評估資料品質")
@@ -243,3 +264,27 @@ if outliers.get("flagged_dates"):
     st.dataframe(flag_df, use_container_width=True, hide_index=True)
 
 st.caption("資料來源：Yahoo Finance + TWSE OpenAPI ｜ 此驗證結果應作為研究報告附錄")
+
+# ── 研究洞察 ──────────────────────────────────────────────────────────────────
+grade = quality.get("grade", "B")
+if grade in ("A+", "A"):
+    signal_label = "資料品質優良"
+    imp = "資料可信度高，後續量化分析結果具備較強說服力，可直接用於策略驗證與報告撰寫。"
+elif grade == "B":
+    signal_label = "資料品質中等"
+    imp = "整體可用，建議在研究報告中揭露資料品質評分，並對異常值期間的訊號保持謹慎。"
+else:
+    signal_label = "資料品質待改善"
+    imp = "存在顯著資料問題，建議更換資料來源或縮短分析期間，以提升研究可信度。"
+
+research_insight(
+    key_finding=(
+        f"{ticker} 資料品質評分 {quality['score']}/100（Grade {grade}），"
+        f"OHLC 錯誤 {ohlc['error_bars']} 筆，"
+        f"Z-score 異常值 {len(outliers.get('zscore_outliers', []))} 日，"
+        f"Hurst 指數 {f'{h_val:.3f}' if h_val else 'N/A'}（{h_interp}）"
+    ),
+    implication=imp,
+    signal=signal_label,
+    next_step="將資料品質評分納入第 14 頁研究報告，作為研究可信度的基礎論述。"
+)
