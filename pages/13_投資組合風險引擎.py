@@ -117,7 +117,8 @@ var_data   = calc_historical_var(port_returns, var_conf)
 cvar_data  = calc_cvar(port_returns, var_conf)
 metrics    = calc_portfolio_metrics(port_returns)
 ba         = calc_beta_alpha(port_returns_aligned, mkt_returns_aligned) if len(common_idx) > 30 else {}
-corr_data  = calc_correlation_matrix(returns[[t for t in available_tickers if t in returns.columns]])
+corr_cols  = [col_map[t] for t in available_tickers]
+corr_data  = calc_correlation_matrix(returns[corr_cols] if len(corr_cols) >= 2 else pd.DataFrame())
 stress     = stress_test(port_returns, avail_weights, available_tickers)
 
 # ── KPI 卡片 ──────────────────────────────────────────────────────────────────
@@ -130,19 +131,20 @@ def _kpi(label, val, sub="", color="#0F172A"):
     <div style="font-size:0.72rem;color:#94A3B8;">{sub}</div></div>"""
 
 c1,c2,c3,c4 = st.columns(4)
-ann_ret = metrics.get("ann_return", 0)
-ann_vol = metrics.get("ann_volatility", 0)
-sharpe  = metrics.get("sharpe_ratio", 0)
-max_dd  = metrics.get("max_drawdown", 0)
+# ann_return / ann_volatility / max_drawdown are already in % from calc_portfolio_metrics
+ann_ret = metrics.get("ann_return") or 0
+ann_vol = metrics.get("ann_volatility") or 0
+sharpe  = metrics.get("sharpe_ratio") or 0
+max_dd  = metrics.get("max_drawdown") or 0
 
-c1.markdown(_kpi("年化報酬率", f"{ann_ret*100:+.2f}%", "252 日複利", "#16A34A" if ann_ret>0 else "#DC2626"), unsafe_allow_html=True)
-c2.markdown(_kpi("年化波動率", f"{ann_vol*100:.2f}%", "daily_std × √252"), unsafe_allow_html=True)
+c1.markdown(_kpi("年化報酬率", f"{ann_ret:+.2f}%", "252 日複利", "#16A34A" if ann_ret>0 else "#DC2626"), unsafe_allow_html=True)
+c2.markdown(_kpi("年化波動率", f"{ann_vol:.2f}%", "daily_std × √252"), unsafe_allow_html=True)
 c3.markdown(_kpi("Sharpe Ratio", f"{sharpe:.3f}", "rf = 1.5% p.a.", "#16A34A" if sharpe>1 else ("#F59E0B" if sharpe>0 else "#DC2626")), unsafe_allow_html=True)
-c4.markdown(_kpi("最大回撤", f"{max_dd*100:.2f}%", "Peak-to-Trough", "#DC2626"), unsafe_allow_html=True)
+c4.markdown(_kpi("最大回撤", f"{max_dd:.2f}%", "Peak-to-Trough", "#DC2626"), unsafe_allow_html=True)
 
 c5,c6,c7,c8 = st.columns(4)
-sortino = metrics.get("sortino_ratio", 0)
-calmar  = metrics.get("calmar_ratio", 0)
+sortino = metrics.get("sortino_ratio") or 0
+calmar  = metrics.get("calmar_ratio")  or 0
 beta    = ba.get("beta", None)
 alpha   = ba.get("alpha_annualized", None)
 
@@ -157,8 +159,8 @@ section_header(f"尾部風險：VaR 與 CVaR（信心水準 {int(var_conf*100)}%
 
 va1, va2 = st.columns(2)
 with va1:
-    var_pct = var_data.get("var_pct", 0)
-    var_dollar = var_data.get("var_dollar_per_1m", 0)
+    var_pct = var_data.get("var_pct") or 0
+    var_dollar = var_data.get("var_dollar") or 0
     st.markdown(f"""<div style="background:#FEF2F2;border:1px solid #FECACA;border-radius:10px;padding:1.2rem;">
     <div style="font-size:0.75rem;font-weight:700;color:#991B1B;text-transform:uppercase;">
         歷史模擬 VaR（Historical VaR {int(var_conf*100)}%）
@@ -171,8 +173,8 @@ with va1:
     </div>""", unsafe_allow_html=True)
 
 with va2:
-    cvar_pct = cvar_data.get("cvar_pct", 0)
-    cvar_dollar = cvar_data.get("cvar_dollar_per_1m", 0)
+    cvar_pct = cvar_data.get("cvar_pct") or 0
+    cvar_dollar = cvar_data.get("cvar_dollar") or 0
     st.markdown(f"""<div style="background:#FFF7ED;border:1px solid #FED7AA;border-radius:10px;padding:1.2rem;">
     <div style="font-size:0.75rem;font-weight:700;color:#9A3412;text-transform:uppercase;">
         條件風險值 CVaR / Expected Shortfall
@@ -225,7 +227,7 @@ section_header("報酬率相關矩陣（Spearman Rank Correlation）")
 
 if corr_data and corr_data.get("corr_matrix") is not None:
     cmat = corr_data["corr_matrix"]
-    avg_corr = corr_data.get("avg_correlation", 0)
+    avg_corr = corr_data.get("avg_correlation") or 0.0
 
     fig_corr = go.Figure(go.Heatmap(
         z=cmat.values.tolist(),
