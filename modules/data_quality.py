@@ -652,19 +652,25 @@ def cross_validate_sources(ticker: str) -> dict:
     base_ticker = ticker.replace(".TW", "").replace(".TWO", "").strip()
 
     # ── Source 1: yfinance ────────────────────────────────────────────────
+    # Use yf.download() (consistent with the rest of the codebase) instead of
+    # Ticker.history(), because newer yfinance versions (0.2.40+) may return
+    # MultiIndex columns from .history() that break the "Close" key lookup.
     try:
         import yfinance as yf
-        symbol = base_ticker + ".TW"
-        tkr = yf.Ticker(symbol)
-        hist = tkr.history(period="5d", progress=False, auto_adjust=True)
-        if hist.empty:
-            # Try .TWO
-            symbol = base_ticker + ".TWO"
-            tkr = yf.Ticker(symbol)
-            hist = tkr.history(period="5d", progress=False, auto_adjust=True)
+        for suffix in [".TW", ".TWO"]:
+            symbol = base_ticker + suffix
+            raw = yf.download(symbol, period="5d", auto_adjust=True,
+                              progress=False, multi_level_index=False)
+            if not raw.empty:
+                break
 
-        if not hist.empty:
-            result["yfinance_price"] = round(float(hist["Close"].iloc[-1]), 2)
+        if not raw.empty:
+            # Normalise MultiIndex columns (old yfinance single-ticker format)
+            if isinstance(raw.columns, pd.MultiIndex):
+                raw.columns = raw.columns.get_level_values(0)
+            raw.columns = [str(c).lower() for c in raw.columns]
+            if "close" in raw.columns:
+                result["yfinance_price"] = round(float(raw["close"].iloc[-1]), 2)
     except Exception as e:
         result["note"] += f"yfinance error: {e}. "
 
