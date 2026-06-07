@@ -200,7 +200,8 @@ if wf_result.get("error"):
 else:
     ins = wf_result.get("in_sample", {})
     oos = wf_result.get("out_of_sample", {})
-    deg = wf_result.get("degradation", {})
+    sharpe_deg = wf_result.get("degradation", None)   # float: oos_sharpe - is_sharpe
+    deg_note   = wf_result.get("degradation_note", "")
 
     # 比較表格
     metrics_map = [
@@ -222,9 +223,6 @@ else:
     st.dataframe(comp_df, use_container_width=True, hide_index=True)
 
     # 績效解釋
-    sharpe_deg = deg.get("sharpe_degradation", None)
-    return_deg = deg.get("return_degradation", None)
-
     if sharpe_deg is not None:
         if abs(sharpe_deg) < 0.3:
             eval_text = "✅ 樣本外績效穩健，Sharpe 降幅小於 0.3，策略泛化能力良好。"
@@ -236,8 +234,8 @@ else:
             eval_text = "🔴 樣本外績效急劇惡化，Sharpe 降幅 > 0.8，策略可能對歷史資料過度擬合。"
             eval_color = "#FEF2F2"
         st.markdown(f"""<div style="background:{eval_color};border-radius:8px;padding:0.8rem 1rem;margin-top:0.8rem;font-size:0.85rem;">
-        {eval_text}<br><br>
-        <b>Sharpe 降幅：</b>{sharpe_deg:+.3f}　<b>報酬率降幅：</b>{return_deg:+.2f}% (若可計算)
+        {eval_text}<br>
+        <b>Sharpe 降幅：</b>{sharpe_deg:+.3f}　｜　{deg_note}
         </div>""", unsafe_allow_html=True)
 
     # 資產曲線對比
