@@ -219,12 +219,14 @@ with st.spinner("比對 yfinance 與 TWSE 官方資料..."):
 if xval.get("error"):
     st.warning(f"跨來源驗證暫時無法執行：{xval['error']}")
 else:
-    diff_pct = abs(xval.get("difference_pct", 0))
+    diff_pct = abs(xval.get("diff_pct") or 0)   # key is "diff_pct", not "difference_pct"
     status   = "✅ 一致" if diff_pct <= 2 else "⚠️ 差異偏大"
     s_color  = "#16A34A" if diff_pct <= 2 else "#DC2626"
+    yf_price   = xval.get("yfinance_price")
+    twse_price = xval.get("twse_price")
     c1, c2, c3 = st.columns(3)
-    c1.metric("yfinance 最新價",  f"${xval.get('yfinance_price', 'N/A')}")
-    c2.metric("TWSE 官方收盤價",  f"${xval.get('twse_price', 'N/A')}")
+    c1.metric("yfinance 最新價",   f"${yf_price}"   if yf_price   is not None else "N/A")
+    c2.metric("TWSE 官方收盤價",   f"${twse_price}" if twse_price is not None else "N/A")
     c3.metric("差異幅度", f"{diff_pct:.2f}%", delta=status)
     if diff_pct > 2:
         st.error("兩個資料來源差異 > 2%，建議以 TWSE 官方資料為準，或確認除息/除權調整設定。")

@@ -451,11 +451,12 @@ def calc_portfolio_metrics(returns: pd.Series) -> dict:
     win_rate = float((r > 0).sum() / n * 100)
 
     # Interpretation string
-    sharpe_str = f"{sharpe:.3f}" if sharpe is not None else "N/A"
+    sharpe_str  = f"{sharpe:.3f}"  if sharpe  is not None else "N/A"
+    sortino_str = f"{sortino:.3f}" if sortino is not None else "N/A"
+    calmar_str  = f"{calmar:.3f}"  if calmar  is not None else "N/A"
     interpretation = (
         f"Annualized return: {ann_return*100:.2f}%, volatility: {ann_vol*100:.2f}%. "
-        f"Sharpe={sharpe_str}, Sortino={sortino:.3f if sortino else 'N/A'}, "
-        f"Calmar={calmar:.3f if calmar else 'N/A'}. "
+        f"Sharpe={sharpe_str}, Sortino={sortino_str}, Calmar={calmar_str}. "
         f"Max drawdown: {max_dd_pct:.2f}%. "
         f"Win rate: {win_rate:.1f}% of trading days positive."
     )
