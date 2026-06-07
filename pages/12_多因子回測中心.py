@@ -309,10 +309,9 @@ st.caption(f"權重來源：{mode_str}。IC 加權邏輯：預測力越強的因
 st.caption("資料來源：Yahoo Finance ｜ 回測遵循 T+1 執行原則，今日訊號隔日開盤成交，避免未來函數偏誤")
 
 # ── 研究洞察 ──────────────────────────────────────────────────────────────────
-ic_stats = ic_result.get("ic_stats", ic_result)
-valid_ics = {k: v for k, v in ic_stats.items() if not k.startswith("_") and isinstance(v, dict)}
-best_factor = max(valid_ics, key=lambda k: abs(valid_ics[k].get("ic_mean", 0)), default="")
-best_ic = valid_ics.get(best_factor, {}).get("ic_mean", 0) if best_factor else 0
+valid_ics = {k: v for k, v in ic_stats_all.items() if not k.startswith("_") and isinstance(v, dict)}
+best_factor = max(valid_ics, key=lambda k: abs(valid_ics[k].get("mean_ic", 0)), default="")
+best_ic = valid_ics.get(best_factor, {}).get("mean_ic", 0) if best_factor else 0
 oos_sharpe = (wf_result or {}).get("out_of_sample", {}).get("sharpe_ratio")
 oos_return  = (wf_result or {}).get("out_of_sample", {}).get("total_return")
 

@@ -305,13 +305,14 @@ if stress:
 st.caption("風險指標採用歷史模擬法，不依賴常態分佈假設。壓力測試結果為估算，不代表實際未來損益。")
 
 # ── 研究洞察 ──────────────────────────────────────────────────────────────────
-sharpe_v = metrics.get("sharpe_ratio") or 0
-beta_v   = beta_alpha.get("beta") or 0
-cvar_v   = cvar_result.get("cvar_pct") or 0
+sharpe_v  = metrics.get("sharpe_ratio") or 0
+beta_v    = ba.get("beta") or 0
+cvar_v    = cvar_data.get("cvar_pct") or 0
+avg_corr_ = corr_data.get("avg_correlation") or 0.0 if corr_data else 0.0
 
-if sharpe_v >= 1.5 and avg_corr <= 0.6:
+if sharpe_v >= 1.5 and avg_corr_ <= 0.6:
     sig = "風險調整優良"
-elif sharpe_v >= 1.0 and avg_corr <= 0.7:
+elif sharpe_v >= 1.0 and avg_corr_ <= 0.7:
     sig = "風險結構合理"
 else:
     sig = "建議優化組合"
@@ -322,7 +323,7 @@ research_insight(
         f"組合（{portfolio_names}）年化 Sharpe {sharpe_v:.3f}，"
         f"Beta {beta_v:.3f}（相對 0050），"
         f"CVaR {abs(cvar_v):.2f}%，"
-        f"平均相關係數 {avg_corr:.3f}"
+        f"平均相關係數 {avg_corr_:.3f}"
     ),
     implication=(
         "Beta < 1 代表防禦型組合，市場下跌時損失相對較小；"
