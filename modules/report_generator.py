@@ -526,7 +526,10 @@ def _build_factor_section(factor_data: dict) -> str:
     if not factor_data:
         return '<div class="warn-box">Factor analysis data not available.</div>'
 
-    summary = factor_data.get("_summary", {})
+    # factor_data may be structured as {"ic_stats": {...}, "ic_weights": {...}}
+    # or directly as the ic_stats dict — handle both
+    ic_stats = factor_data.get("ic_stats", factor_data)
+    summary = ic_stats.get("_summary", {})
     rows = []
 
     factor_labels = {
@@ -538,7 +541,7 @@ def _build_factor_section(factor_data: dict) -> str:
     }
 
     for fname, label in factor_labels.items():
-        stats = factor_data.get(fname, {})
+        stats = ic_stats.get(fname, {})
         if not stats or stats.get("n_obs", 0) < 5:
             rows.append([label, "—", "—", "—", "—", "—", "Insufficient data"])
             continue
@@ -560,7 +563,7 @@ def _build_factor_section(factor_data: dict) -> str:
         rows
     )
 
-    sig_factors = summary.get("significant_factors", [])
+    sig_factors = summary.get("significant_factors", ic_stats.get("significant_factors", []))
     best_factor = summary.get("best_factor", "—")
     avg_abs_ic = _fmt(summary.get("avg_abs_ic"), ".4f")
 
@@ -662,11 +665,12 @@ def _build_risk_section(risk_data: dict) -> str:
     if not risk_data:
         return '<div class="warn-box">Risk metrics not available.</div>'
 
-    metrics = risk_data.get("portfolio_metrics", {})
+    # page 14 stores keys as: "metrics", "var", "cvar", "beta_alpha", "stress"
+    metrics = risk_data.get("metrics", risk_data.get("portfolio_metrics", {}))
     var_data = risk_data.get("var", {})
     cvar_data = risk_data.get("cvar", {})
     beta_data = risk_data.get("beta_alpha", {})
-    stress_data = risk_data.get("stress_test", [])
+    stress_data = risk_data.get("stress", risk_data.get("stress_test", []))
 
     # ── Core Metrics Table ──
     core_rows = [
@@ -937,7 +941,7 @@ def generate_executive_summary(report_data: dict) -> str:
             )
 
     # ── 3. Strategy performance ──
-    bt = report_data.get("backtest_metrics", {})
+    bt = report_data.get("backtest_wf", report_data.get("backtest_metrics", {}))
     if bt:
         is_metrics = bt.get("in_sample", {})
         oos_metrics = bt.get("out_of_sample", {})
@@ -1049,8 +1053,8 @@ def build_report_html(report_data: dict) -> str:
     fa_content = _build_factor_section(report_data.get("factor_analysis", {}))
     fa_section = generate_report_section("2. Multi-Factor Analysis", fa_content)
 
-    # Section C: Backtest
-    bt_content = _build_backtest_section(report_data.get("backtest_metrics", {}))
+    # Section C: Backtest (page 14 stores as "backtest_wf")
+    bt_content = _build_backtest_section(report_data.get("backtest_wf", report_data.get("backtest_metrics", {})))
     bt_section = generate_report_section("3. Strategy Backtest (Walk-Forward)", bt_content)
 
     # Section D: Risk

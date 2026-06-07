@@ -83,7 +83,17 @@ if prices is None or prices.empty or returns is None or returns.empty:
     st.error("無法取得足夠的歷史資料，請確認股票代號是否正確。"); st.stop()
 
 # 計算組合報酬（加權）
-available_tickers = [t for t in valid_tickers if t in returns.columns]
+# yfinance 欄位帶 .TW 後綴，建立使用者代號到實際欄位的對應
+col_map = {}
+for t in valid_tickers:
+    if t in returns.columns:
+        col_map[t] = t
+    elif t + ".TW" in returns.columns:
+        col_map[t] = t + ".TW"
+    elif t + ".TWO" in returns.columns:
+        col_map[t] = t + ".TWO"
+
+available_tickers = list(col_map.keys())
 if not available_tickers:
     st.error("所有股票均無法取得資料"); st.stop()
 
@@ -92,11 +102,12 @@ avail_weights = {t: weights_dict.get(t, 1/len(available_tickers)) for t in avail
 total_w = sum(avail_weights.values())
 avail_weights = {t: v/total_w for t, v in avail_weights.items()}
 
-port_returns = sum(returns[t] * avail_weights[t] for t in available_tickers)
+port_returns = sum(returns[col_map[t]] * avail_weights[t] for t in available_tickers)
 port_returns = port_returns.dropna()
 
-# 市場報酬
-mkt_returns  = returns.get("0050", pd.Series(dtype=float)).dropna()
+# 市場報酬（欄位可能是 "0050.TW"）
+mkt_col = "0050.TW" if "0050.TW" in returns.columns else "0050"
+mkt_returns  = returns.get(mkt_col, pd.Series(dtype=float)).dropna()
 common_idx   = port_returns.index.intersection(mkt_returns.index)
 port_returns_aligned = port_returns.loc[common_idx]
 mkt_returns_aligned  = mkt_returns.loc[common_idx]

@@ -90,13 +90,14 @@ k3.markdown(f"""<div style="background:#F8FAFC;border-radius:12px;padding:1rem;t
 <div style="font-size:0.75rem;color:#64748B;">錯誤 K 棒數</div>
 </div>""", unsafe_allow_html=True)
 
+zscore_count = len(outliers.get('zscore_outliers', []))
 k4.markdown(f"""<div style="background:#F8FAFC;border-radius:12px;padding:1rem;text-align:center;border:1px solid #E2E8F0;">
 <div style="font-size:0.7rem;color:#64748B;font-weight:700;text-transform:uppercase;">異常值（Z-score）</div>
-<div style="font-size:2rem;font-weight:900;color:{'#F59E0B' if outliers.get('zscore_count',0)>0 else '#16A34A'};">{outliers.get('zscore_count', 0)}</div>
+<div style="font-size:2rem;font-weight:900;color:{'#F59E0B' if zscore_count>0 else '#16A34A'};">{zscore_count}</div>
 <div style="font-size:0.75rem;color:#64748B;">|z| > 3.5 報酬日</div>
 </div>""", unsafe_allow_html=True)
 
-miss_pct = quality.get('missing_pct', 0)
+miss_pct = quality.get('sub_checks', {}).get('missing', {}).get('missing_pct', 0)
 k5.markdown(f"""<div style="background:#F8FAFC;border-radius:12px;padding:1rem;text-align:center;border:1px solid #E2E8F0;">
 <div style="font-size:0.7rem;color:#64748B;font-weight:700;text-transform:uppercase;">缺值率</div>
 <div style="font-size:2rem;font-weight:900;color:{'#DC2626' if miss_pct>5 else '#16A34A'};">{miss_pct:.1f}%</div>
@@ -151,9 +152,8 @@ with col_a:
 
 with col_b:
     # Hurst 指數
-    hurst = stationary.get("hurst_exponent", {})
-    h_val = hurst.get("hurst", None)
-    h_interp = hurst.get("interpretation", "")
+    h_val = stationary.get("hurst_exponent", None)
+    h_interp = stationary.get("hurst_interpretation", "")
     h_color  = "#16A34A" if h_val and h_val > 0.55 else ("#F59E0B" if h_val and h_val > 0.45 else "#DC2626")
 
     st.markdown(f"""
@@ -169,10 +169,10 @@ with col_b:
         H ≈ 0.50：隨機漫步（效率市場）<br>
         H < 0.45：均值回歸（適用反轉策略）
     </td></tr>
-    <tr><td style="color:#64748B;padding:2px 0">價格一階自相關</td>
-        <td style="font-weight:700;text-align:right">{stationary.get('price_autocorr_lag1', 'N/A')}</td></tr>
-    <tr><td style="color:#64748B;padding:2px 0">報酬率一階自相關</td>
-        <td style="font-weight:700;text-align:right">{stationary.get('return_autocorr_lag1', 'N/A')}</td></tr>
+    <tr><td style="color:#64748B;padding:2px 0">價格一階自相關（Lag-1）</td>
+        <td style="font-weight:700;text-align:right">{stationary.get('autocorr_lag1', 'N/A')}</td></tr>
+    <tr><td style="color:#64748B;padding:2px 0">價格五日自相關（Lag-5）</td>
+        <td style="font-weight:700;text-align:right">{stationary.get('autocorr_lag5', 'N/A')}</td></tr>
     </table>
     </div>
     """, unsafe_allow_html=True)

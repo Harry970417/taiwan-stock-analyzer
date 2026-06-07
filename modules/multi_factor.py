@@ -555,11 +555,18 @@ def walk_forward_backtest(
 
         result = run_backtest(signal_df, initial_capital=initial_capital)
 
-        # Summarise into a clean metrics dict (remove DataFrames to keep dict serializable)
-        metrics = {
-            k: v for k, v in result.items()
-            if not isinstance(v, pd.DataFrame)
-        }
+        # Summarise into a clean metrics dict; keep portfolio_df for charting
+        metrics = {}
+        for k, v in result.items():
+            if isinstance(v, pd.DataFrame):
+                if k == "portfolio_df" and not v.empty:
+                    # Rename column to "value" as expected by page 12 chart
+                    pf = v[["date", "portfolio_value"]].copy()
+                    pf.columns = ["date", "value"]
+                    metrics["portfolio_df"] = pf
+                # Skip trades_df
+            else:
+                metrics[k] = v
         metrics["n_bars"] = len(split_df)
         metrics["date_range"] = (
             f"{str(split_df['date'].min())[:10]} to {str(split_df['date'].max())[:10]}"

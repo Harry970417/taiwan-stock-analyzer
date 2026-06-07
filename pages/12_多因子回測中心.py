@@ -128,7 +128,7 @@ st.caption("IC = Spearman(因子值ₜ, 下日報酬ₜ₊₁)。|IC| > 0.03 代
 
 ic_rows = []
 for fname, ic_data in ic_stats_all.items():
-    if not ic_data:
+    if fname.startswith("_") or not ic_data:
         continue
     mean_ic  = ic_data.get("mean_ic", 0)
     icir     = ic_data.get("icir", 0)
@@ -160,6 +160,8 @@ colors_map = {"momentum":"#1E40AF","trend":"#16A34A","rsi_factor":"#7C3AED",
               "volume_factor":"#F59E0B","macd_factor":"#DC2626"}
 
 for fname, ic_data in ic_stats_all.items():
+    if fname.startswith("_"):
+        continue
     rolling_ic = ic_data.get("rolling_ic_series")
     if rolling_ic is None or len(rolling_ic) < 5:
         continue
