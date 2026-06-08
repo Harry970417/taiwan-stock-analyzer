@@ -92,14 +92,16 @@ ef5.markdown(kpi_card("停利停損比", f"{rr:.1f}x", "越高越好"), unsafe_a
 
 st.markdown("")
 section_header("支撐壓力位")
-price = quote["price"]
+price = quote["price"] or 1
 sr_l, sr_r = st.columns(2)
 with sr_l:
-    for n,v in sr["all_resistance"][:2]:
-        st.markdown(f'<div style="background:#FEF2F2;border-left:3px solid #DC2626;padding:0.5rem 0.8rem;margin-bottom:0.3rem;border-radius:0 5px 5px 0;">⬆ 壓力 {n}：<b>${v}</b>（+{(v/price-1)*100:.1f}%）</div>', unsafe_allow_html=True)
+    for n, v in sr.get("all_resistance", [])[:2]:
+        if v and price:
+            st.markdown(f'<div style="background:#FEF2F2;border-left:3px solid #DC2626;padding:0.5rem 0.8rem;margin-bottom:0.3rem;border-radius:0 5px 5px 0;">⬆ 壓力 {n}：<b>${v}</b>（+{(v/price-1)*100:.1f}%）</div>', unsafe_allow_html=True)
     st.markdown(f'<div style="background:#EFF6FF;border:2px solid #1E40AF;padding:0.5rem 0.8rem;margin-bottom:0.3rem;border-radius:5px;"><b>● 目前 ${price}</b></div>', unsafe_allow_html=True)
-    for n,v in sr["all_support"][:2]:
-        st.markdown(f'<div style="background:#F0FDF4;border-left:3px solid #16A34A;padding:0.5rem 0.8rem;margin-bottom:0.3rem;border-radius:0 5px 5px 0;">⬇ 支撐 {n}：<b>${v}</b>（{(v/price-1)*100:.1f}%）</div>', unsafe_allow_html=True)
+    for n, v in sr.get("all_support", [])[:2]:
+        if v and price:
+            st.markdown(f'<div style="background:#F0FDF4;border-left:3px solid #16A34A;padding:0.5rem 0.8rem;margin-bottom:0.3rem;border-radius:0 5px 5px 0;">⬇ 支撐 {n}：<b>${v}</b>（{(v/price-1)*100:.1f}%）</div>', unsafe_allow_html=True)
 with sr_r:
     buy_s = prs["buy_score"]; sell_s = prs["sell_score"]
     fig_pie = go.Figure(go.Pie(labels=["買壓","賣壓"],values=[buy_s,sell_s],hole=0.55,
@@ -113,9 +115,10 @@ with sr_r:
 st.markdown("")
 section_header("技術指標")
 t1,t2,t3,t4,t5,t6 = st.columns(6)
-t1.markdown(kpi_card("MA5",  f"${quote['ma5']}", "站上" if quote['price']>quote['ma5'] else "跌破", "up" if quote['price']>quote['ma5'] else "down"), unsafe_allow_html=True)
-t2.markdown(kpi_card("MA20", f"${quote['ma20'] or 'N/A'}", "站上" if quote['ma20'] and quote['price']>quote['ma20'] else "跌破"), unsafe_allow_html=True)
-t3.markdown(kpi_card("VWAP", f"${quote['vwap']}", "站上" if quote['price']>quote['vwap'] else "跌破"), unsafe_allow_html=True)
+_ma5  = quote.get("ma5");  _ma20 = quote.get("ma20"); _vwap = quote.get("vwap")
+t1.markdown(kpi_card("MA5",  f"${_ma5}"  if _ma5  else "N/A", "站上" if _ma5  and price > _ma5  else "跌破", "up" if _ma5  and price > _ma5  else "down"), unsafe_allow_html=True)
+t2.markdown(kpi_card("MA20", f"${_ma20}" if _ma20 else "N/A", "站上" if _ma20 and price > _ma20 else "跌破", "up" if _ma20 and price > _ma20 else "down"), unsafe_allow_html=True)
+t3.markdown(kpi_card("VWAP", f"${_vwap}" if _vwap else "N/A", "站上" if _vwap and price > _vwap else "跌破", "up" if _vwap and price > _vwap else "down"), unsafe_allow_html=True)
 t4.markdown(kpi_card("RSI(14)", f"{quote['rsi']}", "超買>70 / 超賣<30"), unsafe_allow_html=True)
 t5.markdown(kpi_card("量比", f"{quote['vol_ratio']}x", "vs 昨日"), unsafe_allow_html=True)
 t6.markdown(kpi_card("vs均量", f"{quote['vol_vs_ma5']}x", "vs 5日均量"), unsafe_allow_html=True)

@@ -234,15 +234,21 @@ with st.expander("📋 執行摘要預覽（報告將包含詳細版）", expand
         bullets.append(f"**策略驗證**：Walk-Forward 樣本外 Sharpe Ratio 為 {oos_sharpe:.3f}，泛化能力{oos_word}，策略降解幅度需參照詳細報告。")
 
     # 風險
-    if var_pct is not None:
-        bullets.append(f"**風險特徵**：日 VaR 95% 為 {var_pct*100:.3f}%，CVaR（Expected Shortfall）為 {(risk.get('cvar') or {}).get('cvar_pct', 0)*100:.3f}%；最大歷史回撤 {(risk.get('metrics') or {}).get('max_drawdown', 0)*100:.2f}%。")
+    if var_pct is not None and isinstance(var_pct, (int, float)):
+        cvar_pct   = (risk.get("cvar") or {}).get("cvar_pct")
+        max_dd     = (risk.get("metrics") or {}).get("max_drawdown")
+        cvar_str   = f"{cvar_pct*100:.3f}%" if isinstance(cvar_pct, (int, float)) else "N/A"
+        dd_str     = f"{max_dd*100:.2f}%"   if isinstance(max_dd,   (int, float)) else "N/A"
+        bullets.append(f"**風險特徵**：日 VaR 95% 為 {var_pct*100:.3f}%，CVaR（Expected Shortfall）為 {cvar_str}；最大歷史回撤 {dd_str}。")
 
     # 基本面
     fin = report_data.get("fin_summary") or {}
     eps = fin.get("eps")
     roe = fin.get("roe")
-    if eps or roe:
-        bullets.append(f"**基本面**：最新 EPS {eps if eps else 'N/A'} 元，ROE {roe if roe else 'N/A'}%，財務資料來源 FinMind API，涵蓋期間請參照報告附錄。")
+    if eps is not None or roe is not None:
+        eps_str = f"{eps:.2f}" if isinstance(eps, (int, float)) else "N/A"
+        roe_str = f"{roe:.2f}" if isinstance(roe, (int, float)) else "N/A"
+        bullets.append(f"**基本面**：最新 EPS {eps_str} 元，ROE {roe_str}%，財務資料來源 FinMind API，涵蓋期間請參照報告附錄。")
 
     for b in bullets:
         st.markdown(f"- {b}")

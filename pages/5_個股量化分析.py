@@ -101,40 +101,48 @@ st.markdown("---")
 
 section_header("技術指標總覽")
 left_col, mid_col, right_col = st.columns(3)
+_p5   = quote["price"] or 1
+_ma5  = quote.get("ma5");  _ma20 = quote.get("ma20"); _vwap = quote.get("vwap")
 with left_col:
     st.markdown("##### 均線狀態")
-    ma5s  = "🟢 站上" if quote["price"] > quote["ma5"] else "🔴 跌破"
-    ma20s = "🟢 站上" if quote["ma20"] and quote["price"]>quote["ma20"] else "🔴 跌破"
-    st.markdown(f"| 指標 | 數值 | 狀態 |\n|------|------|------|\n| MA5 | {quote['ma5']} | {ma5s} |\n| MA20 | {quote['ma20'] or 'N/A'} | {ma20s} |\n| VWAP | {quote['vwap']} | {'🟢 站上' if quote['price']>quote['vwap'] else '🔴 跌破'} |")
+    ma5s  = "🟢 站上" if _ma5  and _p5 > _ma5  else "🔴 跌破"
+    ma20s = "🟢 站上" if _ma20 and _p5 > _ma20 else "🔴 跌破"
+    vwap_s= "🟢 站上" if _vwap and _p5 > _vwap else "🔴 跌破"
+    st.markdown(f"| 指標 | 數值 | 狀態 |\n|------|------|------|\n| MA5 | {_ma5 or 'N/A'} | {ma5s} |\n| MA20 | {_ma20 or 'N/A'} | {ma20s} |\n| VWAP | {_vwap or 'N/A'} | {vwap_s} |")
 with mid_col:
     st.markdown("##### RSI 與布林通道")
     rsi = quote["rsi"]
     rsi_s = "超買⚠️" if rsi>70 else ("超賣🔔" if rsi<30 else "健康✅")
-    if not hist.empty and len(hist)>=20:
+    if not hist.empty and len(hist) >= 20:
         hc = hist["close"] if "close" in hist.columns else hist.iloc[:,0]
         bm = float(hc.rolling(20).mean().iloc[-1])
         bs = float(hc.rolling(20).std().iloc[-1])
-        bu = round(bm+2*bs,1); bl = round(bm-2*bs,1)
-        bp = round((quote["price"]-bl)/(bu-bl)*100,1) if bu>bl else 50
+        bu = round(bm+2*bs, 1); bl = round(bm-2*bs, 1)
+        bp = round((_p5-bl)/(bu-bl)*100, 1) if bu > bl else 50
+        bp_str = f"{bp}%"
     else:
-        bu=bl=bm=bp="N/A"
-    st.markdown(f"| 指標 | 數值 |\n|------|------|\n| RSI | {rsi}（{rsi_s}）|\n| 布林上軌 | {bu} |\n| 布林下軌 | {bl} |\n| BB位置 | {bp}% |")
+        bu = bl = bm = bp = None
+        bp_str = "N/A"
+    st.markdown(f"| 指標 | 數值 |\n|------|------|\n| RSI | {rsi}（{rsi_s}）|\n| 布林上軌 | {bu or 'N/A'} |\n| 布林下軌 | {bl or 'N/A'} |\n| BB位置 | {bp_str} |")
 with right_col:
     st.markdown("##### 關鍵價位")
-    for n,v in sr["all_resistance"][:2]:
-        st.markdown(f"🔴 **壓力** {n}：**${v}**（+{(v/quote['price']-1)*100:.1f}%）")
-    st.markdown(f"⚪ **目前** ${quote['price']}")
-    for n,v in sr["all_support"][:2]:
-        st.markdown(f"🟢 **支撐** {n}：**${v}**（{(v/quote['price']-1)*100:.1f}%）")
+    for n, v in sr.get("all_resistance", [])[:2]:
+        if v and _p5:
+            st.markdown(f"🔴 **壓力** {n}：**${v}**（+{(v/_p5-1)*100:.1f}%）")
+    st.markdown(f"⚪ **目前** ${_p5}")
+    for n, v in sr.get("all_support", [])[:2]:
+        if v and _p5:
+            st.markdown(f"🟢 **支撐** {n}：**${v}**（{(v/_p5-1)*100:.1f}%）")
 
 if show_fin:
     st.markdown("---")
     section_header("基本面分析（FinMind）")
     fa1,fa2,fa3,fa4 = st.columns(4)
-    fa1.metric("EPS（元）",  f"{fin_summary.get('eps','N/A')}")
-    fa2.metric("ROE（%）",   f"{fin_summary.get('roe','N/A')}")
-    fa3.metric("毛利率（%）",f"{fin_summary.get('gross_margin','N/A')}")
-    fa4.metric("淨利率（%）",f"{fin_summary.get('net_margin','N/A')}")
+    def _fmt(v, dec=2): return f"{v:.{dec}f}" if isinstance(v, (int, float)) else "N/A"
+    fa1.metric("EPS（元）",  _fmt(fin_summary.get('eps')))
+    fa2.metric("ROE（%）",   _fmt(fin_summary.get('roe')))
+    fa3.metric("毛利率（%）",_fmt(fin_summary.get('gross_margin')))
+    fa4.metric("淨利率（%）",_fmt(fin_summary.get('net_margin')))
     rev_records = fin_summary.get("quarterly_revenue",[])
     if rev_records:
         rev_df = pd.DataFrame(rev_records)
