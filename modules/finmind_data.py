@@ -103,10 +103,21 @@ def get_dividend(stock_id: str) -> pd.DataFrame:
     return df
 
 
+def get_balance_sheet(stock_id: str) -> pd.DataFrame:
+    """
+    取得資產負債表（含股東權益）
+    資料集：TaiwanStockBalanceSheet
+    """
+    df = _fetch("TaiwanStockBalanceSheet", stock_id, start_date="2022-01-01")
+    return df
+
+
 def parse_financial_summary(stock_id: str) -> dict:
     """
-    整合財務資料，回傳結構化摘要
-    供頁面顯示使用
+    整合財務資料，回傳結構化摘要。
+    - GrossMargin = GrossProfit / Revenue * 100
+    - NetMargin   = IncomeAfterTaxes / Revenue * 100
+    - ROE         = sum(近4季 IncomeAfterTaxes) / 最新 EquityAttributableToOwnersOfParent * 100
     """
     result = {
         "eps":          None,
@@ -120,43 +131,58 @@ def parse_financial_summary(stock_id: str) -> dict:
     }
 
     try:
-        # ── 季度財務 ──
+        # ── 季度損益 ──────────────────────────────────────
         fin_df = get_financial_statements(stock_id)
         if not fin_df.empty and "type" in fin_df.columns:
-            # EPS
-            eps_df = fin_df[fin_df["type"] == "EPS"]
-            if not eps_df.empty:
-                result["eps"] = float(eps_df["value"].iloc[-1])
+            fin_df = fin_df.sort_values("date")
 
-            # ROE
-            roe_df = fin_df[fin_df["type"] == "ROE"]
-            if not roe_df.empty:
-                result["roe"] = float(roe_df["value"].iloc[-1])
+            def _latest(type_name: str):
+                s = fin_df[fin_df["type"] == type_name]["value"]
+                return float(s.iloc[-1]) if not s.empty else None
 
-            # 毛利率
-            gm_df = fin_df[fin_df["type"].str.contains("GrossMargin|毛利率", na=False)]
-            if not gm_df.empty:
-                result["gross_margin"] = float(gm_df["value"].iloc[-1])
+            def _sum4q(type_name: str):
+                s = fin_df[fin_df["type"] == type_name]["value"]
+                vals = s.dropna().tail(4)
+                return float(vals.sum()) if not vals.empty else None
 
-            # 淨利率
-            nm_df = fin_df[fin_df["type"].str.contains("NetMargin|淨利率", na=False)]
-            if not nm_df.empty:
-                result["net_margin"] = float(nm_df["value"].iloc[-1])
+            # EPS（直接取最新季）
+            result["eps"] = _latest("EPS")
 
-        # ── 月營收 ──
+            # 毛利率 = GrossProfit / Revenue（最新同季）
+            rev_latest  = _latest("Revenue")
+            gp_latest   = _latest("GrossProfit")
+            ni_latest   = _latest("IncomeAfterTaxes")
+            if rev_latest and rev_latest != 0:
+                if gp_latest is not None:
+                    result["gross_margin"] = round(gp_latest / rev_latest * 100, 2)
+                if ni_latest is not None:
+                    result["net_margin"] = round(ni_latest / rev_latest * 100, 2)
+
+        # ── ROE = 近4季淨利 / 最新股東權益 ──────────────────
+        bs_df = get_balance_sheet(stock_id)
+        if not bs_df.empty and "type" in bs_df.columns and not fin_df.empty:
+            bs_df = bs_df.sort_values("date")
+            eq_s = bs_df[bs_df["type"] == "EquityAttributableToOwnersOfParent"]["value"]
+            equity = float(eq_s.iloc[-1]) if not eq_s.empty else None
+
+            ni_4q = _sum4q("IncomeAfterTaxes") if not fin_df.empty else None
+
+            if equity and equity != 0 and ni_4q is not None:
+                result["roe"] = round(ni_4q / equity * 100, 2)
+
+        # ── 月營收 ────────────────────────────────────────
         rev_df = get_quarterly_revenue(stock_id)
         if not rev_df.empty:
             rev_df_all = rev_df.sort_values("date")
             result["quarterly_revenue"] = rev_df_all.tail(12).to_dict("records")
 
-            # 營收成長率（最新月 vs 去年同月，需要 13 個月資料）
             if len(rev_df_all) >= 13:
                 latest_rev = float(rev_df_all["revenue"].iloc[-1])
                 prev_rev   = float(rev_df_all["revenue"].iloc[-13])
                 if prev_rev > 0:
-                    result["revenue_growth"] = (latest_rev / prev_rev - 1) * 100
+                    result["revenue_growth"] = round((latest_rev / prev_rev - 1) * 100, 2)
 
-        # ── 法人籌碼 ──
+        # ── 法人籌碼 ──────────────────────────────────────
         inst_df = get_institutional_investors(stock_id)
         if not inst_df.empty:
             latest_inst = inst_df.groupby("name").last().reset_index()
