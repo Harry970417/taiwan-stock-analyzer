@@ -2,8 +2,6 @@
 import streamlit as st
 import pandas as pd
 import plotly.graph_objects as go
-import sys, os
-sys.path.insert(0, os.path.join(os.path.dirname(__file__), ".."))
 from modules.institutional_flow import get_institutional_data, calc_institutional_score, get_pivot_table
 from modules.data_source import fetch_realtime_quote, get_stock_name
 from modules.ui_components import inject_css, page_header, disclaimer, section_header, kpi_card

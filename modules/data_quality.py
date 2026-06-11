@@ -12,6 +12,7 @@ import pandas as pd
 import requests
 from datetime import datetime, timedelta
 from typing import Optional
+from utils.data_fetcher import get_stock_data
 
 
 # ---------------------------------------------------------------------------
@@ -651,26 +652,11 @@ def cross_validate_sources(ticker: str) -> dict:
     # Strip any existing suffix for TWSE lookup
     base_ticker = ticker.replace(".TW", "").replace(".TWO", "").strip()
 
-    # ── Source 1: yfinance ────────────────────────────────────────────────
-    # Use yf.download() (consistent with the rest of the codebase) instead of
-    # Ticker.history(), because newer yfinance versions (0.2.40+) may return
-    # MultiIndex columns from .history() that break the "Close" key lookup.
+    # ── Source 1: yfinance (via unified data_fetcher) ─────────────────────
     try:
-        import yfinance as yf
-        for suffix in [".TW", ".TWO"]:
-            symbol = base_ticker + suffix
-            raw = yf.download(symbol, period="5d", auto_adjust=True,
-                              progress=False, multi_level_index=False)
-            if not raw.empty:
-                break
-
-        if not raw.empty:
-            # Normalise MultiIndex columns (old yfinance single-ticker format)
-            if isinstance(raw.columns, pd.MultiIndex):
-                raw.columns = raw.columns.get_level_values(0)
-            raw.columns = [str(c).lower() for c in raw.columns]
-            if "close" in raw.columns:
-                result["yfinance_price"] = round(float(raw["close"].iloc[-1]), 2)
+        df_yf = get_stock_data(base_ticker, period="5d", force_refresh=True)
+        if not df_yf.empty and "close" in df_yf.columns:
+            result["yfinance_price"] = round(float(df_yf["close"].iloc[-1]), 2)
     except Exception as e:
         result["note"] += f"yfinance error: {e}. "
 

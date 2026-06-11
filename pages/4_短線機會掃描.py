@@ -2,8 +2,6 @@
 import streamlit as st
 import pandas as pd
 import plotly.graph_objects as go
-import sys, os
-sys.path.insert(0, os.path.join(os.path.dirname(__file__), ".."))
 from modules.daytrade_scanner import get_daytrade_top5, get_volume_top10
 from modules.data_source import get_market_status
 from modules.ui_components import inject_css, page_header, disclaimer, section_header, kpi_card

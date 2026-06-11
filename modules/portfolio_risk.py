@@ -14,8 +14,8 @@
 
 import numpy as np
 import pandas as pd
-import yfinance as yf
 from typing import Optional
+from utils.data_fetcher import get_stock_data
 
 
 RF_DAILY = 0.015 / 252       # Daily risk-free rate (1.5% p.a.)
@@ -88,23 +88,18 @@ def fetch_portfolio_data(tickers: list, period: str = "2y") -> dict:
     prices_dict = {}
     for symbol in normalized:
         try:
-            raw = yf.download(symbol, period=period, auto_adjust=True, progress=False)
-            if raw.empty:
+            raw_ticker = symbol.replace(".TW", "").replace(".TWO", "")
+            df = get_stock_data(raw_ticker, period=period, force_refresh=False)
+            if df.empty:
                 result["errors"].append(f"{symbol}: no data returned")
                 continue
 
-            # Handle MultiIndex columns (new yfinance format)
-            if isinstance(raw.columns, pd.MultiIndex):
-                raw.columns = raw.columns.get_level_values(0)
-            raw.columns = [str(c).lower() for c in raw.columns]
-
-            if "close" not in raw.columns:
+            if "close" not in df.columns:
                 result["errors"].append(f"{symbol}: missing 'close' column")
                 continue
 
-            close = raw["close"].dropna()
+            close = df.set_index("date")["close"].dropna()
             close.index = pd.to_datetime(close.index)
-            # Strip timezone for uniformity
             if hasattr(close.index, "tz") and close.index.tz is not None:
                 close.index = close.index.tz_localize(None)
 
@@ -675,21 +670,17 @@ def stress_test(
     # Use 0050.TW proxy if no market series is provided
     portfolio_beta = 1.0   # Default assumption
     try:
-        mkt_raw = yf.download("0050.TW", period="2y", auto_adjust=True, progress=False)
-        if not mkt_raw.empty:
-            if isinstance(mkt_raw.columns, pd.MultiIndex):
-                mkt_raw.columns = mkt_raw.columns.get_level_values(0)
-            mkt_raw.columns = [c.lower() for c in mkt_raw.columns]
-            if "close" in mkt_raw.columns:
-                mkt_close = mkt_raw["close"].pct_change().dropna()
-                mkt_close.index = pd.to_datetime(mkt_close.index)
-                if hasattr(mkt_close.index, "tz") and mkt_close.index.tz is not None:
-                    mkt_close.index = mkt_close.index.tz_localize(None)
+        df_mkt = get_stock_data("0050", period="2y", force_refresh=False)
+        if not df_mkt.empty and "close" in df_mkt.columns:
+            mkt_close = df_mkt.set_index("date")["close"].pct_change().dropna()
+            mkt_close.index = pd.to_datetime(mkt_close.index)
+            if hasattr(mkt_close.index, "tz") and mkt_close.index.tz is not None:
+                mkt_close.index = mkt_close.index.tz_localize(None)
 
-                aligned = pd.DataFrame({"p": r, "m": mkt_close}).dropna()
-                if len(aligned) >= 30:
-                    b, _ = np.polyfit(aligned["m"].values, aligned["p"].values, 1)
-                    portfolio_beta = float(np.clip(b, -3.0, 5.0))
+            aligned = pd.DataFrame({"p": r, "m": mkt_close}).dropna()
+            if len(aligned) >= 30:
+                b, _ = np.polyfit(aligned["m"].values, aligned["p"].values, 1)
+                portfolio_beta = float(np.clip(b, -3.0, 5.0))
     except Exception:
         pass  # Use default beta=1.0
 

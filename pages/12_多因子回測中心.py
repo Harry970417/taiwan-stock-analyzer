@@ -1,4 +1,4 @@
-# pages/12_多因子回測中心.py
+﻿# pages/12_多因子回測中心.py
 # Multi-Factor Backtesting Center
 # Research focus: factor IC analysis + walk-forward validation
 
@@ -7,8 +7,6 @@ import pandas as pd
 import numpy as np
 import plotly.graph_objects as go
 from plotly.subplots import make_subplots
-import sys, os
-sys.path.insert(0, os.path.join(os.path.dirname(__file__), ".."))
 
 from utils.data_fetcher   import get_stock_data
 from utils.indicators     import add_all_indicators
@@ -323,7 +321,11 @@ else:
     sig = "因子品質待改善"
 
 best_label = FACTOR_LABELS.get(best_factor, best_factor)
-oos_txt = f"OOS 夏普 {oos_sharpe:.3f}、報酬 {oos_return:.2f}%" if oos_sharpe is not None else "OOS 數據待跑"
+oos_txt = (
+    f"OOS 夏普 {oos_sharpe:.3f}、報酬 {oos_return:.2f}%"
+    if (oos_sharpe is not None and oos_return is not None)
+    else "OOS 數據待跑"
+)
 
 research_insight(
     key_finding=(

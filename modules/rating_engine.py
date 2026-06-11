@@ -247,14 +247,40 @@ def calc_overall_rating(momentum: dict, valuation: dict,
     """
     計算綜合評級
     加權：動能 30% / 估值 25% / 成長 25% / 財務 20%
+    缺失維度自動重正規化，score=None 的維度不計入加權。
     """
-    weighted = (
-        momentum["score"]  * 0.30 +
-        valuation["score"] * 0.25 +
-        growth["score"]    * 0.25 +
-        financial["score"] * 0.20
+    BASE_WEIGHTS = {
+        "momentum":  0.30,
+        "valuation": 0.25,
+        "growth":    0.25,
+        "financial": 0.20,
+    }
+    all_dims = {
+        "momentum":  momentum,
+        "valuation": valuation,
+        "growth":    growth,
+        "financial": financial,
+    }
+
+    # 只納入 score 為有效數字的維度
+    available = {
+        k: d for k, d in all_dims.items()
+        if isinstance(d.get("score"), (int, float))
+    }
+
+    if not available:
+        return {
+            "score": 0, "grade": "D",
+            "signal": "資料不足 ⚠️", "signal_color": "#9E9E9E",
+            "dimensions": all_dims,
+        }
+
+    total_w = sum(BASE_WEIGHTS[k] for k in available)
+    weighted = sum(
+        available[k]["score"] * BASE_WEIGHTS[k] / total_w
+        for k in available
     )
-    score = round(weighted)
+    score = round(max(0, min(100, weighted)))
     grade = _grade(score)
 
     if score >= 75:
@@ -278,10 +304,5 @@ def calc_overall_rating(momentum: dict, valuation: dict,
         "grade":        grade,
         "signal":       signal,
         "signal_color": signal_color,
-        "dimensions": {
-            "momentum":  momentum,
-            "valuation": valuation,
-            "growth":    growth,
-            "financial": financial,
-        }
+        "dimensions": all_dims,
     }

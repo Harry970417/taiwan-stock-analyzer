@@ -3,9 +3,9 @@
 
 import pandas as pd
 import requests
-import yfinance as yf
 import time
 from datetime import datetime
+from utils.data_fetcher import get_stock_data
 
 def get_twse_all_stocks() -> pd.DataFrame:
     """從 TWSE 取得今日所有上市股票行情"""
@@ -57,14 +57,9 @@ def get_hist_volume(ticker: str, days: int = 6) -> dict:
     取得歷史成交量（用於計算昨日量、5日均量）
     """
     try:
-        sym = ticker + ".TW"
-        df  = yf.download(sym, period=f"{days+5}d",
-                          auto_adjust=True, progress=False)
+        df = get_stock_data(ticker, period=f"{days+5}d", force_refresh=True)
         if df.empty:
             return {}
-        if isinstance(df.columns, pd.MultiIndex):
-            df.columns = df.columns.get_level_values(0)
-        df.columns = [str(c).lower() for c in df.columns]
         
         vol_ma5   = float(df["volume"].tail(5).mean())
         prev_vol  = float(df["volume"].iloc[-2]) if len(df) >= 2 else 0

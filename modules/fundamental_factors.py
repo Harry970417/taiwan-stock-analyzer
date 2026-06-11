@@ -6,8 +6,6 @@ import requests
 import pandas as pd
 import numpy as np
 from datetime import datetime, timedelta
-import sys, os
-sys.path.insert(0, os.path.join(os.path.dirname(__file__), ".."))
 from validators.financial_validator import (
     validate_metric, safe_div, safe_float, calc_confidence, make_data_label
 )

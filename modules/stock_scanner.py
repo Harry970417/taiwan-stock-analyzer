@@ -4,11 +4,11 @@
 
 import requests
 import pandas as pd
-import yfinance as yf
 from datetime import datetime, timedelta
 import time
 import sqlite3
 import os
+from utils.data_fetcher import get_stock_data
 
 # 快取資料庫路徑
 DB_PATH = os.path.join(os.path.dirname(__file__), "..", "data", "stock_data.db")
@@ -113,21 +113,10 @@ def get_yesterday_volume(ticker: str) -> float:
     從 yfinance 取得昨日成交量（用於計算量增幅）
     """
     try:
-        symbol = ticker + ".TW"
-        df = yf.download(symbol, period="5d", auto_adjust=True, progress=False)
-
+        df = get_stock_data(ticker, period="5d", force_refresh=True)
         if df.empty or len(df) < 2:
             return 0
-
-        # 新版 yfinance MultiIndex 處理
-        if isinstance(df.columns, pd.MultiIndex):
-            df.columns = df.columns.get_level_values(0)
-
-        df.columns = [str(c).lower() for c in df.columns]
-
-        # 取倒數第二筆（昨日）的成交量
         return float(df["volume"].iloc[-2])
-
     except Exception:
         return 0
 

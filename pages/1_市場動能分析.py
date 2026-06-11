@@ -2,8 +2,6 @@
 import streamlit as st
 import pandas as pd
 import plotly.graph_objects as go
-import sys, os
-sys.path.insert(0, os.path.join(os.path.dirname(__file__), ".."))
 from modules.stock_scanner import get_quick_scan
 from modules.ui_components import inject_css, page_header, disclaimer, section_header
 

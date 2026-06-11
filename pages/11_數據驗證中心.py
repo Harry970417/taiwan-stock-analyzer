@@ -1,12 +1,10 @@
-# pages/11_數據驗證中心.py
+﻿# pages/11_數據驗證中心.py
 # Data Validation Center — research credibility layer
 # Every analysis downstream is only as good as the data feeding it.
 
 import streamlit as st
 import pandas as pd
 import plotly.graph_objects as go
-import sys, os
-sys.path.insert(0, os.path.join(os.path.dirname(__file__), ".."))
 
 from utils.data_fetcher    import get_stock_data
 from utils.indicators      import add_all_indicators
@@ -212,16 +210,18 @@ fig_hist.add_trace(go.Histogram(
     histnorm="probability density"
 ))
 
-# 理論常態曲線
+# 理論常態曲線（僅在 sigma > 0 時繪製，避免 NaN/zero crash）
 import numpy as np
-mu, sigma = float(returns.mean()), float(returns.std())
-x_range = np.linspace(mu - 4*sigma, mu + 4*sigma, 200)
-from scipy.stats import norm as scipy_norm
-y_norm = scipy_norm.pdf(x_range, mu, sigma)
-fig_hist.add_trace(go.Scatter(
-    x=x_range, y=y_norm, name="理論常態分佈",
-    line=dict(color="#DC2626", width=2, dash="dash")
-))
+mu    = float(returns.mean()) if len(returns) > 0 else 0.0
+sigma = float(returns.std())  if len(returns) > 1 else 0.0
+if sigma > 0:
+    x_range = np.linspace(mu - 4*sigma, mu + 4*sigma, 200)
+    from scipy.stats import norm as scipy_norm
+    y_norm = scipy_norm.pdf(x_range, mu, sigma)
+    fig_hist.add_trace(go.Scatter(
+        x=x_range, y=y_norm, name="理論常態分佈",
+        line=dict(color="#DC2626", width=2, dash="dash")
+    ))
 fig_hist.update_layout(
     template="plotly_white", height=300,
     xaxis_title="日報酬率", yaxis_title="機率密度",

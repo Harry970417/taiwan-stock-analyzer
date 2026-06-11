@@ -3,8 +3,6 @@
 
 import pandas as pd
 import numpy as np
-import sys, os
-sys.path.insert(0, os.path.join(os.path.dirname(__file__), ".."))
 from validators.financial_validator import safe_div, safe_float
 
 def calc_risk_metrics(df: pd.DataFrame, quote: dict) -> dict:

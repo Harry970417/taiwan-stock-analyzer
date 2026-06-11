@@ -1,12 +1,10 @@
-# pages/14_研究報告產生器.py
+﻿# pages/14_研究報告產生器.py
 # Research Report Generator
 # Combines all analyses into a downloadable academic-style HTML report
 
 import streamlit as st
 import pandas as pd
 import datetime
-import sys, os
-sys.path.insert(0, os.path.join(os.path.dirname(__file__), ".."))
 
 from utils.data_fetcher    import get_stock_data
 from utils.indicators      import add_all_indicators
@@ -153,9 +151,18 @@ if include_risk:
         pdata = fetch_portfolio_data([ticker], period=period)
         returns_df = pdata.get("returns", pd.DataFrame())
 
-        if ticker in returns_df.columns:
-            port_r = returns_df[ticker].dropna()
-            mkt_r  = returns_df.get("0050", pd.Series(dtype=float)).dropna()
+        # yfinance returns columns as "2330.TW" — resolve the actual column name
+        ticker_col = next(
+            (c for c in [ticker, ticker + ".TW", ticker + ".TWO"] if c in returns_df.columns),
+            None
+        )
+        if ticker_col is not None:
+            port_r = returns_df[ticker_col].dropna()
+            mkt_col = next(
+                (c for c in ["0050.TW", "0050"] if c in returns_df.columns),
+                None
+            )
+            mkt_r = returns_df[mkt_col].dropna() if mkt_col else pd.Series(dtype=float)
             common = port_r.index.intersection(mkt_r.index)
 
             var_d   = calc_historical_var(port_r, 0.95)

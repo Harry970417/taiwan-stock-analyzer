@@ -1,4 +1,4 @@
-# pages/13_投資組合風險引擎.py
+﻿# pages/13_投資組合風險引擎.py
 # Portfolio Risk Engine
 # Research focus: institutional-grade risk metrics, stress testing, CAPM decomposition
 
@@ -7,8 +7,6 @@ import pandas as pd
 import numpy as np
 import plotly.graph_objects as go
 import plotly.figure_factory as ff
-import sys, os
-sys.path.insert(0, os.path.join(os.path.dirname(__file__), ".."))
 
 from modules.portfolio_risk import (fetch_portfolio_data, calc_historical_var,
                                      calc_cvar, calc_beta_alpha, calc_portfolio_metrics,

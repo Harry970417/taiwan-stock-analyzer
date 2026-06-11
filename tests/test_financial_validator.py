@@ -2,9 +2,6 @@
 # 單元測試：金融數據驗證層
 # 執行：python -m pytest tests/ -v
 
-import sys, os
-sys.path.insert(0, os.path.join(os.path.dirname(__file__), ".."))
-
 from validators.financial_validator import (
     safe_div, safe_float, validate_metric, clamp,
     calc_confidence, make_data_label
@@ -177,7 +174,6 @@ def test_data_label_has_badge():
 def test_rsi_calculation():
     """RSI 結果必須在 0–100"""
     import pandas as pd, numpy as np
-    sys.path.insert(0, os.path.join(os.path.dirname(__file__), ".."))
     from utils.indicators import calculate_rsi
 
     prices = [100, 102, 101, 103, 105, 104, 106, 108, 107, 109,

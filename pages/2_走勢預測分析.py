@@ -1,8 +1,6 @@
 ﻿# pages/2_走勢預測分析.py
 import streamlit as st
 import pandas as pd
-import sys, os
-sys.path.insert(0, os.path.join(os.path.dirname(__file__), ".."))
 from utils.data_fetcher import get_stock_data
 from utils.indicators import add_all_indicators
 from utils.charts import plot_candlestick, plot_rsi, plot_macd

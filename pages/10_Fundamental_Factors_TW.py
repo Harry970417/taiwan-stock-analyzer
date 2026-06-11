@@ -1,4 +1,4 @@
-# pages/10_Fundamental_Factors (USA).py
+﻿# pages/10_Fundamental_Factors (USA).py
 # Fundamental Factor Analysis — English Version
 # Upgraded: 4-dimension scoring, sanity checks, data transparency
 
@@ -6,8 +6,6 @@ import streamlit as st
 import pandas as pd
 import plotly.graph_objects as go
 from plotly.subplots import make_subplots
-import sys, os
-sys.path.insert(0, os.path.join(os.path.dirname(__file__), ".."))
 
 from modules.fundamental_factors import (
     get_fundamental_data, calc_fundamental_score, generate_fundamental_commentary

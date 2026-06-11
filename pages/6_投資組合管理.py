@@ -3,11 +3,10 @@ import streamlit as st
 import pandas as pd
 import plotly.graph_objects as go
 import plotly.express as px
-import sys, os
-sys.path.insert(0, os.path.join(os.path.dirname(__file__), ".."))
 from modules.portfolio import add_holding, delete_holding, get_all_holdings, calc_portfolio_pnl
 from modules.data_source import fetch_realtime_quote, get_stock_name
 from modules.ui_components import inject_css, page_header, disclaimer, section_header, kpi_card
+from utils.data_fetcher import get_stock_data
 
 st.set_page_config(page_title="投資組合管理", page_icon="💼", layout="wide")
 inject_css()
@@ -109,21 +108,16 @@ with tab3:
     period_opt = st.selectbox("比較期間", ["1mo","3mo","6mo","1y","2y"], index=2)
     run_compare = st.button("📊 開始比較", type="primary")
     if run_compare:
-        import yfinance as yf
         tickers_cmp = [t.strip() for t in compare_input.split(",") if t.strip()]
         with st.spinner("下載比較資料..."):
             fig_cmp = go.Figure()
             for t in tickers_cmp:
                 try:
-                    df_c = yf.download(t+".TW", period=period_opt, auto_adjust=True, progress=False)
+                    df_c = get_stock_data(t, period=period_opt, force_refresh=False)
                     if df_c.empty: continue
-                    if isinstance(df_c.columns, pd.MultiIndex): df_c.columns = df_c.columns.get_level_values(0)
-                    df_c.columns = [str(c).lower() for c in df_c.columns]
-                    df_c = df_c.reset_index(); df_c.columns = [str(c).lower() for c in df_c.columns]
                     base = df_c["close"].iloc[0]
-                    df_c["ret"] = (df_c["close"]/base-1)*100
-                    date_col = "date" if "date" in df_c.columns else df_c.columns[0]
-                    fig_cmp.add_trace(go.Scatter(x=df_c[date_col],y=df_c["ret"],name=t,mode="lines",line=dict(width=2)))
+                    df_c["ret"] = (df_c["close"] / base - 1) * 100
+                    fig_cmp.add_trace(go.Scatter(x=df_c["date"], y=df_c["ret"], name=t, mode="lines", line=dict(width=2)))
                 except: st.warning(f"{t} 資料取得失敗")
             fig_cmp.add_hline(y=0, line_dash="dash", line_color="#CBD5E1")
             fig_cmp.update_layout(title="多股累積報酬率比較（%）",template="plotly_white",height=450,margin=dict(l=10,r=10,t=50,b=10))

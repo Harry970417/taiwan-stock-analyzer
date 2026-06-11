@@ -30,3 +30,6 @@ Thumbs.db
 .vscode/
 .idea/
 *.swp
+
+# Generated research output (re-created by run_research_study.py)
+exports/

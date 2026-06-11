@@ -3,8 +3,6 @@ import streamlit as st
 import pandas as pd
 import plotly.graph_objects as go
 import numpy as np
-import sys, os
-sys.path.insert(0, os.path.join(os.path.dirname(__file__), ".."))
 from modules.ui_components import inject_css, page_header, disclaimer, section_header, kpi_card
 from utils.data_fetcher import get_stock_data
 from utils.indicators import add_all_indicators

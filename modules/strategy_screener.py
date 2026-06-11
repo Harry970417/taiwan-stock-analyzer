@@ -3,10 +3,10 @@
 # 支援：行業篩選、技術條件篩選、自訂代號
 
 import pandas as pd
-import yfinance as yf
 import requests
 import time
 import numpy as np
+from utils.data_fetcher import get_stock_data
 
 # 台股行業分類（手動維護常見分類）
 INDUSTRY_TICKERS = {
@@ -28,13 +28,9 @@ def get_industry_list() -> list:
 def _fetch_quote(ticker: str) -> dict:
     """取得單一股票快速報價"""
     try:
-        sym = ticker + ".TW"
-        df  = yf.download(sym, period="60d", auto_adjust=True, progress=False)
+        df = get_stock_data(ticker, period="60d", force_refresh=False)
         if df.empty:
             return {}
-        if isinstance(df.columns, pd.MultiIndex):
-            df.columns = df.columns.get_level_values(0)
-        df.columns = [str(c).lower() for c in df.columns]
 
         close  = float(df["close"].iloc[-1])
         prev   = float(df["close"].iloc[-2])

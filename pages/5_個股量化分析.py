@@ -2,8 +2,6 @@
 import streamlit as st
 import pandas as pd
 import plotly.graph_objects as go
-import sys, os
-sys.path.insert(0, os.path.join(os.path.dirname(__file__), ".."))
 from modules.data_source import fetch_realtime_quote, get_market_status, get_stock_name
 from modules.finmind_data import parse_financial_summary
 from modules.rating_engine import (calc_momentum_score, calc_valuation_score,

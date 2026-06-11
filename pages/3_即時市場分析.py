@@ -3,8 +3,6 @@ import streamlit as st
 import pandas as pd
 import plotly.graph_objects as go
 from plotly.subplots import make_subplots
-import sys, os
-sys.path.insert(0, os.path.join(os.path.dirname(__file__), ".."))
 from modules.data_source import fetch_realtime_quote, get_market_status, get_stock_name
 from modules.entry_exit_model import calc_support_resistance, calc_pressure_score, calc_entry_exit
 from modules.explainability import generate_ai_summary, generate_research_commentary
