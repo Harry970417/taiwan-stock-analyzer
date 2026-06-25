@@ -21,6 +21,14 @@ data/*.db
 # Environment
 .env
 .env.local
+.env.*
+
+# Local agent configuration
+.codex/
+.claude/
+
+# Patch artifacts
+*.patch
 
 # OS
 .DS_Store
