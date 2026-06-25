@@ -1,6 +1,6 @@
 # Cross-Sectional Equity Factor Research Platform
 
-> Empirical asset pricing research — cross-sectional factor construction,
+> Empirical asset pricing research: cross-sectional factor construction,
 > Information Coefficient analysis, and reproducible long-short portfolio
 > backtesting for Taiwan Stock Exchange (TWSE) equities.
 
@@ -10,37 +10,46 @@
 
 | Phase | Description | Status | Key Metric |
 |-------|-------------|--------|-----------|
-| 0 — Exploratory | N=16 stocks · CAPM · 2022–2024 | Complete | IC=0.5429 · α=102.84%* |
-| 1 — Data Pipeline | Steps A–L · 10 modules | Complete | 145 tests passing |
-| 2 — Full-Market Study | N≈900+ · 10+ yr · FF5 | In Development | — |
-| 3 — Factor Refinement | LASSO · IC-weighted · OOS validation | Planned | — |
-| 4 — Portfolio Optimization | Black-Litterman · transaction costs | Planned | — |
+| 0 - Exploratory | N=16 stocks, CAPM, 2022-2024 | Complete | IC=0.5429, alpha=102.84%* |
+| 1 - Data Pipeline | Steps A-L, 10 modules | Complete | 155 passed, 1 warning |
+| 1b - V1 Pilot | H1-H4 pilot run, N=16 | Complete | Pilot evidence only |
+| 2 - Full-Market Study | N~900+, 10+ yr, FF5 | Not started / in development | Pending |
+| 3 - Factor Refinement | LASSO, IC-weighted, OOS validation | Planned | Pending |
+| 4 - Portfolio Optimization | Black-Litterman, transaction costs | Planned | Pending |
 
-<sup>*Phase 0 exploratory result only. N=16, CAPM benchmark, 2022–2024 AI/technology bull market period.
+<sup>*Phase 0 exploratory result only. N=16, CAPM benchmark, 2022-2024 AI/technology bull market period.
 Full methodological limitations are detailed in the Experimental Results section below.</sup>
+
+---
+
+## Portfolio Snapshot
+
+This repository combines a Taiwan equity factor research pipeline with a Streamlit decision-support platform. The research side emphasizes reproducibility, T+1 backtest execution, snapshot-oriented data governance, and explicit bias controls for look-ahead, survivorship, selection, and data leakage risks. The application side surfaces the same research modules through interactive dashboards for market review, factor screening, backtesting, and portfolio risk analysis.
+
+The reported Phase 0 and Phase 1 V1 results are pilot evidence for methodology development only. They are not investment advice and should not be interpreted as validated trading signals.
 
 ---
 
 ## Why This Repository Matters
 
-- **Reproducible by design** — T+1 execution constraint, 145 pytest unit tests, and a fully deterministic pipeline; every result is independently verifiable from raw API data
-- **Honest empirics** — Phase 0 results are reported with complete methodological limitations and are not packaged as investment or research conclusions
-- **Taiwan-specific factor research** — Three-institution mandatory flow disclosure operationalized as a quantitative factor signal; this information set is underexplored in the cross-sectional asset pricing literature
-- **Full research pipeline** — From raw multi-source API ingestion through financial validation, feature engineering, and statistical hypothesis testing in a single codebase
-- **Academic methodology** — Spearman IC analysis, quintile portfolio formation, and CAPM/FF5 alpha estimation following Fama-French (1992, 2015) and Grinold-Kahn (2000) conventions
-- **Progressive research design** — Phase 0 through Phase 4 roadmap with explicit escalation in sample size, risk model specification, and methodology complexity
+- **Reproducible by design** - T+1 execution constraint, snapshot protocol, 155 passing pytest checks, and deterministic pipeline components.
+- **Honest empirics** - Phase 0 and V1 pilot results are reported with methodological limitations and are not packaged as investment conclusions.
+- **Taiwan-specific factor research** - Three-institution mandatory flow disclosure is operationalized as a quantitative factor signal.
+- **Full research pipeline** - Raw multi-source API ingestion, financial validation, feature engineering, statistical testing, and report output live in one codebase.
+- **Academic methodology** - Spearman IC analysis, quintile portfolio formation, and CAPM/FF5 alpha estimation follow standard asset-pricing conventions.
+- **Progressive research design** - Phase 0 through Phase 4 roadmap escalates sample size, risk model specification, and validation rigor.
 
 ---
 
 ## Research Questions
 
-**H1 — Information Coefficient Stability**
+**H1 - Information Coefficient Stability**
 Do composite factor scores exhibit a positive and statistically significant Spearman rank correlation with subsequent stock returns across the cross-section of TWSE equities?
 
-**H2 — Data Contamination Robustness**
+**H2 - Data Contamination Robustness**
 Is the factor construction methodology robust to data quality irregularities inherent in TWSE market and financial reporting data?
 
-**H3 — Long-Short Portfolio Abnormal Return**
+**H3 - Long-Short Portfolio Abnormal Return**
 Does a quintile-sorted long-short portfolio constructed from composite factor scores generate statistically significant abnormal returns after controlling for systematic risk?
 
 ---
@@ -61,7 +70,7 @@ flowchart LR
     end
 
     subgraph Processing["Processing Layer"]
-        C1["Financial Validator\n145 unit tests"]
+        C1["Financial Validator\npytest coverage"]
         C2["Feature Engineering\nSignal Transformation"]
         C3["Factor Construction\n6 Factor Groups"]
     end
@@ -99,7 +108,7 @@ flowchart LR
 flowchart TD
     RQ["Research Question Definition\nH1 · H2 · H3"]
     DA["Data Acquisition\nTWSE + FinMind + Yahoo Finance"]
-    DV["Data Validation\nfinancial_validator.py\n145 unit tests"]
+    DV["Data Validation\nfinancial_validator.py\npytest checks"]
     FE["Feature Engineering\nZ-score Standardization\nSignal Transformation"]
     FC["Factor Construction\n6 Factor Groups\nComposite Score"]
     ICA["IC Analysis\nSpearman Rank Correlation\nMonthly IC Series"]
@@ -347,7 +356,7 @@ flowchart TD
 
 ### Validation
 
-All input data passes through `validators/financial_validator.py`, which enforces rules for price continuity, trading halt flags, return outlier thresholds, and data gap patterns specific to TWSE reporting conventions. The validation layer is covered by 145 unit test cases in `tests/test_financial_validator.py` (pytest).
+All input data passes through `validators/financial_validator.py`, which enforces rules for price continuity, trading halt flags, return outlier thresholds, and data gap patterns specific to TWSE reporting conventions. The validation layer is covered by the project pytest suite. The current baseline is `155 passed, 1 warning`; the warning is a local `.pytest_cache` permission issue, not a functional or test failure.
 
 ---
 
@@ -361,7 +370,7 @@ flowchart LR
     Root --> STR["strategies/\nBacktesting"]
     Root --> UTL["utils/\nInfrastructure"]
     Root --> VAL["validators/\nData quality"]
-    Root --> TST["tests/\n145 unit tests"]
+    Root --> TST["tests/\n155 pytest checks"]
     Root --> PAG["pages/\nResearch interface"]
 
     MOD --> MF["multi_factor.py\nFactor composite scoring"]
@@ -374,7 +383,7 @@ flowchart LR
 
     UTL --> BT["backtest.py\nT+1 execution engine"]
     VAL --> FV["financial_validator.py\nTWSE-specific validation rules"]
-    TST --> TV["test_financial_validator.py\n145 pytest cases"]
+    TST --> TV["test_financial_validator.py\nvalidation checks"]
 ```
 
 ```
@@ -420,12 +429,12 @@ taiwan-stock-analyzer/
 
 | Property | Implementation |
 |----------|---------------|
-| Test framework | pytest — 145 unit tests (`tests/test_financial_validator.py`) |
+| Test framework | pytest baseline: `155 passed, 1 warning` |
 | Look-ahead prevention | T+1 execution constraint in all backtesting |
 | Pipeline determinism | All computations are deterministic given fixed input data |
 | Data transparency | Missing values reported as N/A; no silent imputation |
 | Validation layer | `validators/financial_validator.py` with documented rule specifications |
-| Environment | `requirements.txt`, `Dockerfile` for reproducible setup |
+| Environment | `requirements.txt`, `Dockerfile` for reproducible setup; warning is local `.pytest_cache` permission only |
 
 ---
 
@@ -447,15 +456,15 @@ taiwan-stock-analyzer/
 
 ## Future Research
 
-### Phase 1 — Reproducible Data Pipeline (Completed, 2025)
+### Phase 1 - Reproducible Data Pipeline and V1 Pilot (Complete)
 
 Implemented an end-to-end, fully reproducible data pipeline for TWSE equity research:
 - Steps A through L: raw data ingestion, parsing, cleaning, financial validation, feature engineering, and factor computation
 - 10 modular components with standardized interfaces
-- 145 unit tests passing (pytest)
+- Current pytest baseline: `155 passed, 1 warning` (`.pytest_cache` permission warning only)
 - Deterministic execution: identical outputs given the same input data across runs
 
-### Phase 2 — Full-Sample Empirical Study (In Development)
+### Phase 2 - Full-Market Empirical Study (Not started / in development)
 
 Scale the empirical analysis to the full TWSE universe:
 - Stock universe: all TWSE-listed equities (N approximately 900+)
