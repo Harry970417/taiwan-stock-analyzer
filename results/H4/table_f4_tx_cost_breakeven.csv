@@ -1,0 +1,5 @@
+﻿rebalance_freq,n_rebal_per_year,annual_drag_pct,expected_ann_return_pct,net_after_cost_pct,bep_roundtrip_cost_pct,viable
+Daily (252/yr),252,147.42,165.22,17.8,0.6557,True
+Weekly (52/yr),52,30.42,165.22,134.8,3.1774,True
+Monthly (12/yr),12,7.02,165.22,158.2,13.7687,True
+Quarterly (4/yr),4,2.34,165.22,162.88,41.306,True

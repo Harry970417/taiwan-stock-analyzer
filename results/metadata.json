@@ -1,0 +1,73 @@
+{
+  "run_id": "20260619_203713",
+  "generated_at": "2026-06-19T20:40:13.201956",
+  "study_period": {
+    "start": "2021-01-01",
+    "end": "2026-06-19",
+    "lag": 1
+  },
+  "universe": {
+    "mode": "V1",
+    "tickers": [
+      "2330.TW",
+      "2317.TW",
+      "2454.TW",
+      "2308.TW",
+      "2382.TW",
+      "2303.TW",
+      "2412.TW",
+      "2881.TW",
+      "2882.TW",
+      "2886.TW",
+      "1301.TW",
+      "1303.TW",
+      "2002.TW",
+      "2912.TW",
+      "2207.TW",
+      "6505.TW"
+    ],
+    "n": 16
+  },
+  "factors": [
+    "momentum_20d",
+    "volume_ratio",
+    "rsi_14",
+    "macd_signal",
+    "foreign_net_buy",
+    "trust_net_buy",
+    "dealer_net_buy",
+    "roe",
+    "roa",
+    "eps_growth",
+    "revenue_yoy"
+  ],
+  "ic_factors": [
+    "momentum_20d",
+    "volume_ratio",
+    "rsi_14",
+    "macd_signal",
+    "foreign_net_buy",
+    "trust_net_buy",
+    "dealer_net_buy",
+    "roe",
+    "roa",
+    "eps_growth",
+    "revenue_yoy"
+  ],
+  "python_version": "3.14.5",
+  "platform": "Windows-11-10.0.26100-SP0",
+  "packages": {
+    "pandas": "3.0.3",
+    "numpy": "2.4.6",
+    "scipy": "1.17.1",
+    "yfinance": "1.4.1",
+    "plotly": "6.8.0"
+  },
+  "known_limitations": [
+    "SB-1: V1 survivorship bias — 16 large-cap tickers only",
+    "SB-3: no rolling liquidity filter",
+    "LAB-1: forward return shift(−1) semantic documented, not corrected",
+    "Market cap proxy: close×volume (no shares outstanding)",
+    "H2b event dates: FinMind filing date (not actual press release)"
+  ]
+}

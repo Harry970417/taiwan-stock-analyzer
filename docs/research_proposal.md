@@ -214,6 +214,22 @@ Model C（完整）：  r = f(Model B + FI_net, IT_net, DL_net, FI_5d_cum, FI_20
 - `modules/factor_portfolio.py`：多空分位組合建構與績效歸因
 - `utils/panel_data.py`：寬表資料的時序截面 Panel 資料結構管理
 
+### 4.7 Phase 0 Prototype 研究限制說明與 Phase 1 修正路線
+
+本研究計畫延伸自既有之 Taiwan Stock Analyzer Prototype（以下稱 Phase 0），並已完成初步 pipeline validation。在正式展開 Phase 1 全市場研究之前，研究者已明確辨識以下三項系統性設計限制，並規劃具體修正路線。Phase 0 結果一律視為 **preliminary signal / pipeline validation**，不作為對台灣市場因子有效性的正式推論依據。
+
+**限制一：Survivorship Bias 與 Prototype Universe（Status: Acknowledged，Priority: P0，Phase 1 修正）**
+
+Phase 0 之 V1 股票池由 16 檔截至研究撰寫時仍存在之上市公司手動構成，未採用 point-in-time 歷史成份股機制。此設計未能納入研究期間內下市、重組或停牌之標的，導致樣本向存活者集中，系統性高估因子截面預測能力。Phase 1 將改採 TWSE 歷史成份股資料建構每期動態更新之全市場股票池（預計 500–800 檔），確保樣本宇宙反映歷史真實市況。
+
+**限制二：Reproducibility 基礎設施不完整（Status: Acknowledged，Priority: P0，Phase 1 修正）**
+
+Phase 0 系統依賴 FinMind、yfinance 與 TWSE 即時 API 進行資料取得，未建立離線資料快照（data snapshot）機制，亦未完成套件版本精確鎖定（現有 `requirements.txt` 版本範圍與實際執行環境存在不一致）。此現狀意味 Phase 0 管線在技術意義上不符合 JOSS / Nature Computational Science 之 computational reproducibility 定義。Phase 1 將建立完整之資料治理規格（`docs/data_snapshot_protocol.md`），包括 download_timestamp、raw/processed file hash、package version manifest 與 Git commit hash，確保任何審查者可在離線環境下完整重現研究數值。
+
+**限制三：統計核心一致性問題（Status: Acknowledged，Priority: P1，Phase 1 修正）**
+
+Phase 0 系統存在統計方法雙軌問題：Streamlit UI 以 ICIR × √T 計算 IC t 統計量（假設 IC 序列 i.i.d.），而論文腳本採用 Newey-West HAC 估計（正確處理 IC 自相關）。兩種方法對同一數據可能產生不同顯著性判斷，造成「UI 展示結果」與「論文統計量」不一致。Phase 1 將統一採用 NW HAC 作為唯一研究用 t-stat engine（實作於 `modules/stats_utils.py`），UI 與論文腳本均呼叫同一函式，確保全系統統計輸出一致。
+
 ---
 
 ## 五、預期貢獻

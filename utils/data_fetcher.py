@@ -6,6 +6,8 @@ import yfinance as yf
 import pandas as pd
 import sqlite3
 import os
+import re
+from datetime import datetime
 
 DB_PATH = os.path.join(os.path.dirname(__file__), "..", "data", "stock_data.db")
 
@@ -61,10 +63,11 @@ def fetch_stock_data(ticker: str, period: str = "2y") -> pd.DataFrame:
         df["date"] = pd.to_datetime(df["date"])
         df = df.dropna(subset=["close"])
         df["ticker"] = ticker.strip()
+        df["download_at"] = datetime.now().isoformat()   # REP-4
 
         print(f"成功下載 {len(df)} 筆資料（{df['date'].min().date()} ~ {df['date'].max().date()}）")
 
-        save_to_db(df, ticker.strip())
+        save_to_db(df, ticker.strip(), period=period)
         return df
 
     except ValueError:
@@ -72,18 +75,41 @@ def fetch_stock_data(ticker: str, period: str = "2y") -> pd.DataFrame:
     except Exception as e:
         raise ValueError(f"下載資料失敗：{e}")
 
-def save_to_db(df: pd.DataFrame, ticker: str):
+def _sanitize_ticker(ticker: str) -> str:
+    """Validate ticker to prevent SQL injection via table name concatenation.
+
+    Only A-Z, a-z, 0-9, underscore, dot, and hyphen are permitted.
+    Raises ValueError for any ticker that contains other characters.
+    """
+    if not re.fullmatch(r'[A-Za-z0-9_.\\-]+', ticker):
+        raise ValueError(
+            f"Ticker '{ticker}' contains invalid characters. "
+            "Only A-Z, a-z, 0-9, '_', '.', '-' are permitted."
+        )
+    return ticker
+
+def _period_slug(period: str) -> str:
+    """Convert a period string to a safe table-name suffix (DL-1 fix)."""
+    return re.sub(r"[^A-Za-z0-9]", "_", period)
+
+
+def save_to_db(df: pd.DataFrame, ticker: str, period: str = "2y"):
+    """Cache OHLCV data. Table key includes period to avoid cross-period contamination (DL-1)."""
     conn = get_db_connection()
     try:
-        table_name = f"stock_{ticker}"
+        safe = _sanitize_ticker(ticker)
+        table_name = f"stock_{safe}_{_period_slug(period)}"
         df.to_sql(table_name, conn, if_exists="replace", index=False)
         print(f"資料已儲存至 SQLite（表格：{table_name}）")
     finally:
         conn.close()
 
-def load_from_db(ticker: str):
+
+def load_from_db(ticker: str, period: str = "2y"):
+    """Load cached OHLCV data. Must match the same period used at save time (DL-1)."""
     conn = get_db_connection()
-    table_name = f"stock_{ticker}"
+    safe = _sanitize_ticker(ticker)
+    table_name = f"stock_{safe}_{_period_slug(period)}"
     try:
         df = pd.read_sql(f"SELECT * FROM {table_name}", conn)
         df["date"] = pd.to_datetime(df["date"])
@@ -93,9 +119,10 @@ def load_from_db(ticker: str):
     finally:
         conn.close()
 
+
 def get_stock_data(ticker: str, period: str = "2y", force_refresh: bool = False) -> pd.DataFrame:
     if not force_refresh:
-        df = load_from_db(ticker)
+        df = load_from_db(ticker, period=period)
         if df is not None and not df.empty:
             print(f"從資料庫讀取 {ticker} 的資料（共 {len(df)} 筆）")
             return df

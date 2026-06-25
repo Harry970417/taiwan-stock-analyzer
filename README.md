@@ -516,6 +516,6 @@ Data is retrieved at runtime via API calls. Raw data files are not included in t
 
 ---
 
-### Page 1 — 市場動能分析 (Market Momentum)
+## Disclaimer
 
 This project is conducted for academic research and educational purposes only. All analysis is based on historical data and does not constitute investment advice. Phase 0 results reported above are preliminary exploratory findings and should not be interpreted as validated empirical conclusions.

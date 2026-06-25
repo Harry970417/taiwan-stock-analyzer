@@ -31,20 +31,33 @@ from modules.factor_portfolio import (
     quantile_metrics_to_df,
 )
 from modules.multi_factor import compute_factor_matrix
-from modules.finmind_data import _fetch
+from modules.finmind_client import (
+    FinMindClient,
+    build_fundamental_panel,
+    build_flow_panel,
+    get_roe,
+    get_roa,
+    get_eps,
+    get_revenue_growth,
+)
 
 # ── 因子名稱映射 ──────────────────────────────────────────────────────────────
 # 研究管線支援的因子（技術面 + 基本面 + 籌碼）
 PIPELINE_FACTORS = [
+    # 技術面
     "momentum_20d",
     "volume_ratio",
     "rsi_14",
     "macd_signal",
+    # 基本面
     "roe",
+    "roa",
     "eps_growth",
     "revenue_yoy",
+    # 法人籌碼
     "foreign_net_buy",
     "trust_net_buy",
+    "dealer_net_buy",
 ]
 
 # compute_factor_matrix 欄位 → pipeline 命名
@@ -56,15 +69,17 @@ _TECH_COL_MAP = {
 }
 
 FACTOR_ZH = {
-    "momentum_20d":  "動能（20日）",
-    "volume_ratio":  "成交量比",
-    "rsi_14":        "RSI-14",
-    "macd_signal":   "MACD 信號",
-    "roe":           "ROE",
-    "eps_growth":    "EPS 年增率",
-    "revenue_yoy":   "月營收年增率",
+    "momentum_20d":    "動能（20日）",
+    "volume_ratio":    "成交量比",
+    "rsi_14":          "RSI-14",
+    "macd_signal":     "MACD 信號",
+    "roe":             "ROE",
+    "roa":             "ROA",
+    "eps_growth":      "EPS 年增率",
+    "revenue_yoy":     "月營收年增率",
     "foreign_net_buy": "外資淨買超",
     "trust_net_buy":   "投信淨買超",
+    "dealer_net_buy":  "自營商淨買超",
 }
 
 
@@ -103,6 +118,14 @@ class ResearchPipeline:
         self.n_quantiles   = n_quantiles
         self.finmind_token = finmind_token
         self._log          = log_cb or print
+
+        # ── FinMind 用戶端（優先使用傳入 token，否則從 .env 讀取）──────────────
+        import warnings
+        with warnings.catch_warnings(record=True) as _w:
+            warnings.simplefilter("always")
+            self._fm_client = FinMindClient(token=finmind_token or None)
+        if not self._fm_client.has_token:
+            self._log("[Init] FinMind Token Not Found — 基本面 / 籌碼因子將跳過")
 
         # ── 研究狀態（各 step 填入）─────────────────────────────────────────
         self.universe_result:   dict = {}
@@ -223,11 +246,14 @@ class ResearchPipeline:
 
     def prepare_factor_data(self, progress_cb: Optional[Callable] = None) -> dict:
         """
-        計算全部九個因子的截面面板（date × tickers 寬表）。
+        計算全部 11 個因子的截面面板（date × tickers 寬表）。
 
-        技術因子（4 個）：呼叫 compute_factor_matrix，已有 SQLite 快取。
-        基本面因子（3 個）：呼叫 FinMind，季/月頻 forward-fill 至日頻。
-        籌碼因子（2 個）：呼叫 FinMind，日頻流動性正規化。
+        技術面（4）：compute_factor_matrix，SQLite 快取。
+        基本面（4）：FinMindClient — ROE, ROA, EPS年增率, 月營收年增率。
+        籌碼（3）   ：FinMindClient — 外資/投信/自營商淨買超。
+
+        若無 FinMind Token，基本面與籌碼因子會顯示 "FinMind Token Not Found" 並跳過，
+        不影響技術因子正常執行。
 
         Returns
         -------
@@ -237,27 +263,60 @@ class ResearchPipeline:
             self._log("[B] ⚠ 股票池為空，請先執行 build_universe()")
             return {}
 
-        self._log(f"[B] 計算因子面板（{len(self.universe_data)} 檔股票，{len(PIPELINE_FACTORS)} 個因子）")
+        n_factors = len(PIPELINE_FACTORS)
+        self._log(f"[B] 計算因子面板（{len(self.universe_data)} 檔股票，{n_factors} 個因子）")
+        if not self._fm_client.has_token:
+            self._log("[B] FinMind Token Not Found — 基本面/籌碼因子將跳過，僅計算技術因子")
+
         start_date = self._period_to_start_date()
-        total = len(PIPELINE_FACTORS)
+
+        # 基本面 / 籌碼因子 → 使用 finmind_client 中的 panel builder
+        _FUNDAMENTAL_FN = {
+            "roe":         get_roe,
+            "roa":         get_roa,
+            "eps_growth":  lambda sid, sd, c: self._eps_growth_series(sid, sd, c),
+            "revenue_yoy": get_revenue_growth,
+        }
+        _FLOW_KEY = {
+            "foreign_net_buy": "foreign",
+            "trust_net_buy":   "trust",
+            "dealer_net_buy":  "dealer",
+        }
 
         for i, fname in enumerate(PIPELINE_FACTORS):
+            zh = FACTOR_ZH.get(fname, fname)
             if progress_cb:
-                progress_cb(i / total, f"計算因子：{FACTOR_ZH.get(fname, fname)}")
-            self._log(f"[B] {i + 1}/{total}  {FACTOR_ZH.get(fname, fname)}")
+                progress_cb(i / n_factors, f"計算因子：{zh}")
+            self._log(f"[B] {i + 1}/{n_factors}  {zh}")
 
             try:
+                # ── 技術因子 ──────────────────────────────────────────────
                 if fname in _TECH_COL_MAP:
                     panel = self._build_tech_panel(fname)
 
-                elif fname in ("roe", "eps_growth", "revenue_yoy"):
-                    panel = self._build_fundamental_panel(fname, start_date)
+                # ── 基本面因子 ────────────────────────────────────────────
+                elif fname in _FUNDAMENTAL_FN:
+                    if not self._fm_client.has_token:
+                        self._log(f"      SKIP  FinMind Token Not Found")
+                        continue
+                    panel = build_fundamental_panel(
+                        self.universe_data,
+                        _FUNDAMENTAL_FN[fname],
+                        start_date,
+                        client=self._fm_client,
+                    )
 
-                elif fname == "foreign_net_buy":
-                    panel = self._build_flow_panel("外資", start_date)
-
-                elif fname == "trust_net_buy":
-                    panel = self._build_flow_panel("投信", start_date)
+                # ── 籌碼因子 ──────────────────────────────────────────────
+                elif fname in _FLOW_KEY:
+                    if not self._fm_client.has_token:
+                        self._log(f"      SKIP  FinMind Token Not Found")
+                        continue
+                    panel = build_flow_panel(
+                        self.universe_data,
+                        _FLOW_KEY[fname],
+                        start_date,
+                        client=self._fm_client,
+                    )
 
                 else:
                     panel = pd.DataFrame()
@@ -275,8 +334,19 @@ class ResearchPipeline:
             progress_cb(1.0, "因子計算完成")
 
         n_ok = len(self.factor_panels)
-        self._log(f"[B] 完成：{n_ok}/{total} 個因子面板有效")
+        self._log(f"[B] 完成：{n_ok}/{n_factors} 個因子面板有效")
         return self.factor_panels
+
+    @staticmethod
+    def _eps_growth_series(stock_id: str, start_date: str, client: "FinMindClient") -> pd.Series:
+        """EPS 季增率（4 季 pct_change），帶 45 日公告延遲"""
+        from modules.finmind_client import get_eps
+        eps = get_eps(stock_id, start_date, client)
+        if len(eps) < 5:
+            return pd.Series(dtype=float)
+        # 年增率（同期 4 季前）
+        growth = eps.pct_change(4).replace([float("inf"), float("-inf")], float("nan")) * 100
+        return growth.dropna()
 
     # ── B 輔助：起始日期 ──────────────────────────────────────────────────────
 
@@ -294,122 +364,7 @@ class ResearchPipeline:
         col = _TECH_COL_MAP[factor_name]
         return build_factor_panel(self.universe_data, col)
 
-    # ── B 輔助：基本面因子面板 ────────────────────────────────────────────────
-
-    def _build_fundamental_panel(self, factor_name: str, start_date: str) -> pd.DataFrame:
-        """
-        從 FinMind 財報 / 月營收資料建立面板。
-        季頻資料加 45 日公告延遲；月頻加 10 日。
-        """
-        series_dict: dict = {}
-
-        for ticker, ohlcv in self.universe_data.items():
-            try:
-                if factor_name in ("roe", "eps_growth"):
-                    raw = _fetch(
-                        "TaiwanStockFinancialStatements", ticker,
-                        start_date=start_date, token=self.finmind_token,
-                    )
-                    if raw.empty or "type" not in raw.columns:
-                        continue
-                    raw["date"] = pd.to_datetime(raw["date"])
-                    raw = raw.sort_values("date")
-
-                    if factor_name == "roe":
-                        sub = raw[raw["type"] == "ROE"].copy()
-                        if sub.empty:
-                            continue
-                        # 季末 → 加 45 日公告延遲（避免前瞻偏誤）
-                        sub["date"] = sub["date"] + pd.Timedelta(days=45)
-                        series = sub.set_index("date")["value"].astype(float)
-
-                    else:  # eps_growth
-                        sub = raw[raw["type"] == "EPS"].copy()
-                        if len(sub) < 5:
-                            continue
-                        sub["date"] = sub["date"] + pd.Timedelta(days=45)
-                        eps_s = sub.set_index("date")["value"].astype(float)
-                        # 年增率：與 4 季前比較
-                        series = eps_s.pct_change(4).replace([np.inf, -np.inf], np.nan)
-
-                else:  # revenue_yoy
-                    raw = _fetch(
-                        "TaiwanStockMonthRevenue", ticker,
-                        start_date=start_date, token=self.finmind_token,
-                    )
-                    if raw.empty or "revenue" not in raw.columns:
-                        continue
-                    raw["date"] = pd.to_datetime(raw["date"]) + pd.Timedelta(days=10)
-                    raw = raw.sort_values("date")
-                    rev = raw.set_index("date")["revenue"].astype(float)
-                    # 月營收年增率：與 12 個月前比較
-                    series = rev.pct_change(12).replace([np.inf, -np.inf], np.nan)
-
-                # Forward-fill 至股價日曆（季/月頻 → 日頻）
-                price_idx  = pd.to_datetime(ohlcv.set_index("date").index)
-                daily_idx  = pd.date_range(series.index.min(), price_idx.max(), freq="B")
-                series_dict[ticker] = series.reindex(daily_idx).ffill()
-
-            except Exception:
-                continue
-
-            time.sleep(0.3)   # FinMind 免費版速率限制
-
-        if not series_dict:
-            return pd.DataFrame()
-
-        panel = pd.DataFrame(series_dict)
-        panel.index = pd.to_datetime(panel.index)
-        return panel.sort_index()
-
-    # ── B 輔助：籌碼因子面板 ──────────────────────────────────────────────────
-
-    def _build_flow_panel(self, institution: str, start_date: str) -> pd.DataFrame:
-        """
-        從 FinMind 法人買賣超資料建立面板。
-        以前 5 日平均成交量正規化，消除不同股票的量級差異。
-        """
-        series_dict: dict = {}
-
-        for ticker, ohlcv in self.universe_data.items():
-            try:
-                raw = _fetch(
-                    "TaiwanStockInstitutionalInvestorsBuySell", ticker,
-                    start_date=start_date, token=self.finmind_token,
-                )
-                if raw.empty:
-                    continue
-
-                raw["date"] = pd.to_datetime(raw["date"])
-                raw["buy"]  = pd.to_numeric(raw.get("buy",  0), errors="coerce").fillna(0)
-                raw["sell"] = pd.to_numeric(raw.get("sell", 0), errors="coerce").fillna(0)
-                raw["net"]  = raw["buy"] - raw["sell"]
-
-                # 篩選機構類型（partial match：「外資」涵蓋「外資自行買賣」）
-                mask = raw["name"].str.contains(institution, na=False)
-                sub  = raw[mask].groupby("date")["net"].sum()
-                if sub.empty:
-                    continue
-
-                # 流動性正規化：淨買超 / 5日均量
-                vol_ma5 = (
-                    ohlcv.set_index("date")["volume"]
-                    .rolling(5, min_periods=3).mean()
-                )
-                norm = sub / vol_ma5.reindex(sub.index).replace(0, np.nan)
-                series_dict[ticker] = norm.replace([np.inf, -np.inf], np.nan)
-
-            except Exception:
-                continue
-
-            time.sleep(0.2)
-
-        if not series_dict:
-            return pd.DataFrame()
-
-        panel = pd.DataFrame(series_dict)
-        panel.index = pd.to_datetime(panel.index)
-        return panel.sort_index()
+    # （_build_fundamental_panel / _build_flow_panel 已移至 finmind_client.py）
 
     # ─────────────────────────────────────────────────────────────────────────
     # C. run_ic_analysis

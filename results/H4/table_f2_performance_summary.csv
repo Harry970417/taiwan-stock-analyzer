@@ -1,0 +1,12 @@
+﻿Metric,Value
+Mean OOS Sharpe (Baseline A),0.7893  [N=3 folds]
+Mean OOS Sharpe (Extended B),0.5199  [N=4 folds]
+"Mean Difference (B−A, paired)",-0.3381  [N=3 paired folds]
+Inference method,sign_test
+P-value (H0: diff ≤ 0),0.5
+N_positive folds (B > A),2
+95% CI Lower,n/a (N<5)
+95% CI Upper,n/a (N<5)
+N Folds Completed,4
+N Folds Excluded (A=NaN),1
+Note on baseline,"A = 4 tech factors only (momentum,volume_ratio,rsi,macd)"

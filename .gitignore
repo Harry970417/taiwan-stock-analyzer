@@ -33,3 +33,13 @@ Thumbs.db
 
 # Generated research output (re-created by run_research_study.py)
 exports/
+
+# Test coverage artifacts
+.coverage
+htmlcov/
+
+# Phase 1 pipeline cache (binary, auto-regenerated)
+results/data/*.pkl
+
+# Run logs (transient)
+results/*.log

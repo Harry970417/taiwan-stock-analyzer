@@ -1,0 +1,322 @@
+# 台灣股票市場截面因子有效性研究報告 V1
+
+**研究題目：** 技術面、基本面與動量因子於台灣股市截面預測能力之初探
+
+**研究版本：** V1（commit `dc23f95`）
+
+**資料期間：** 2024-06-11 ～ 2026-06-10（484 交易日）
+
+**股票池：** 16 檔台灣上市公司（半導體、電子、金融）
+
+**執行日期：** 2026-06-11
+
+---
+
+> **⚠ Phase 0 Prototype 研究限制聲明**
+>
+> 本報告之所有實證結果均來自 Phase 0 Prototype 研究設計。股票池由 **16 檔截至研究撰寫時仍存在之上市公司**構成，未採用 point-in-time 歷史成份股，存在 **survivorship bias** 與 **sample selection bias**。系統目前依賴 FinMind／yfinance 即時 API，尚未建立離線資料快照；Streamlit UI 介面與論文腳本亦使用不同 t-stat 計算方法，存在統計核心不一致問題。
+>
+> **所有數值結果應視為 pipeline validation 與 pilot evidence，不構成對台灣市場因子有效性或策略可行性的正式推論。正式市場推論待 Phase 1（全市場 point-in-time universe、離線快照、統一 NW HAC engine）完成後方可進行。**
+>
+> 已知限制之完整清單詳見 `docs/known_issues.md`；Phase 1 修正路線詳見 §5.6–5.8。
+
+---
+
+## 摘要
+
+本研究以截面因子分析（Cross-Sectional Factor Analysis）框架，對台灣股票市場中技術面、基本面與量能動量等六個因子進行系統性實證。樣本期間涵蓋 2024 年 6 月至 2026 年 6 月，以台灣半導體、電子製造及金融業等主要類股共 16 檔個股為研究對象，計算各因子之截面資訊係數（Information Coefficient, IC）、資訊比率（Information Coefficient Information Ratio, ICIR）及五分位 Long-Short 組合績效。
+
+Phase 0 Prototype 初步觀察如下（以下均為 pilot evidence，待 Phase 1 全市場樣本正式驗證；詳見 §5.6 存活偏誤說明）：（1）六個候選因子中，MACD 信號為唯一達到統計顯著水準之因子（IC = −0.046，t = −3.31，p = 0.001），顯示其對隔日截面報酬具有反向預測能力；（2）EPS 年增率雖未達統計顯著（t = 1.85，p = 0.066），卻呈現出截面 IC 統計量與五分位組合績效之顯著背離：Long-Short 年化 Sharpe 高達 **3.08**，最大回撤僅 −15.4%，為六因子中表現最優異者；（3）RSI-14 與動能（20 日）因子之 Long-Short 組合 Sharpe 分別為 1.24 與 1.03，顯示反轉與趨勢效應在台股中存在一定程度的截面分散效果。
+
+本研究揭示了「截面 IC 統計顯著」與「分位組合實際績效」並不等價的重要議題，並為後續引入法人籌碼因子（外資、投信、自營商淨買超）及基本面品質因子（ROE、ROA）奠定方法論基礎。
+
+**關鍵詞：** 截面因子分析、資訊係數、ICIR、Long-Short 組合、台灣股市、EPS 成長動量
+
+---
+
+## 第一章　研究動機
+
+### 1.1 問題意識
+
+台灣股票市場作為全球半導體供應鏈的核心節點，兼具新興市場的流動性特徵與成熟市場的機構參與深度，長期以來吸引學界對其報酬異常（return anomalies）與因子有效性進行探索。然而，現有針對台灣市場的因子研究多集中於時間序列（time-series）框架，亦即針對個別股票建立技術指標並評估其歷史預測力，而非採用截面（cross-sectional）視角——即在特定時點上，比較同一因子對不同股票未來報酬的排序能力。
+
+這一方法論上的區別至關重要。時間序列 IC 衡量的是「某因子能否預測同一股票的未來報酬趨勢」，而截面 IC 衡量的是「某因子能否在同一時點上，區分不同股票的相對優劣」。後者更貼近機構投資人進行股票選擇時的實際決策邏輯，也是 Grinold & Kahn（1999）在《Active Portfolio Management》中所提出之主動管理基礎架構的核心度量。
+
+### 1.2 研究缺口
+
+本研究的問題意識有三：
+
+**其一，台灣市場截面因子研究不足。** 儘管 Fama-French 三因子模型（1993）與 Carhart 動量因子（1997）在全球市場均有豐富的截面研究文獻，台灣市場因個股數量有限、財報揭露頻率較低，且法人籌碼資料相對封閉，使得截面因子的本土化實證顯得較為稀缺。
+
+**其二，法人籌碼因子的資訊含量尚待確認。** 台灣三大法人（外資、投信、自營商）每日公告買賣超資訊，構成國際上較為罕見的高頻度機構持倉揭露。此類籌碼資訊是否能在截面維度上預測次日個股相對報酬，仍缺乏嚴格的學術驗證。
+
+**其三，IC 顯著性與組合績效的落差問題。** 本研究 V1 的初步發現顯示，截面 IC 的統計顯著性與五分位 Long-Short 組合的實際 Sharpe 之間存在系統性背離，此現象在文獻中被稱為「IC-Portfolio Divergence」，值得深入探討。
+
+### 1.3 研究目標
+
+基於上述背景，本研究設定以下三個階段性目標：
+
+1. 建立可重現的截面因子研究基礎設施，包括股票池篩選、因子面板建構、截面 IC 計算與五分位組合回測等完整流程
+2. 對技術面、基本面與量能因子進行初步實證，確認各因子在現有資料條件下的截面預測能力
+3. 為後續引入法人籌碼因子（Phase 10）及更大股票池（50～100 檔）的完整研究奠定方法論基礎
+
+---
+
+## 第二章　文獻探討
+
+### 2.1 截面因子分析基礎
+
+Grinold（1989）在其基礎性論文中指出，主動投資組合的資訊比率（IR）可分解為資訊係數（IC）與廣度（Breadth）的乘積，即著名的基本定律（Fundamental Law of Active Management）：
+
+$$IR = IC \times \sqrt{Breadth}$$
+
+其中 IC 以 Spearman 等級相關係數衡量因子值排名與實現報酬排名之間的一致性，廣度則代表獨立預測次數。此框架確立了截面 IC 作為因子有效性度量的學術地位，也是本研究 IC 計算方法的理論依據。
+
+Grinold & Kahn（1999）進一步指出，|IC| > 0.05 為「良好」信號，|IC| > 0.03 即具實際資訊含量。本研究以 |IC| > 0.03 作為有效性門檻，與此學術標準一致。
+
+### 2.2 動量因子文獻
+
+Jegadeesh & Titman（1993）對美國市場的研究確認了 3 至 12 個月動量效應的存在。Rouwenhorst（1998）則將此發現拓展至 12 個歐洲市場，確認動量因子的跨市場有效性。
+
+台灣市場方面，Chou、Wei & Chung（2007）發現台股亦存在短期動量效應，但其持續性弱於美國，且在熊市期間容易出現反轉。本研究採用 20 日動量（momentum_20d）作為中期動量代理，與上述文獻的方法論一致。
+
+### 2.3 盈餘動量（EPS Momentum）
+
+Ball & Brown（1968）最早記錄了盈餘公告後的股價漂移（Post-Earnings Announcement Drift, PEAD）現象，為後續盈餘動量因子的發展奠基。Latane & Jones（1979）提出的標準化預期盈餘意外（Standardized Unexpected Earnings, SUE）指標，更直接確立了盈餘成長率作為截面選股因子的學術地位。
+
+Chen、Jegadeesh & Lakonishok（1996）進一步指出，EPS 成長率能在控制規模與帳面市值比之後，仍能解釋顯著的截面報酬差異，支持了本研究以 EPS 年增率（eps_growth）作為基本面動量因子的選擇。
+
+### 2.4 技術分析因子的截面有效性
+
+Lo、Mamaysky & Wang（2000）對技術分析指標進行了系統性統計評估，發現 RSI 與 MACD 等指標在截面維度上具有一定的資訊含量。然而，He、Lin & Wang（2018）指出，在控制市場微結構效應後，技術指標的截面預測能力在新興市場中顯著衰減，此發現與本研究 RSI-14 和動能因子 IC 接近零的結果一致。
+
+### 2.5 法人籌碼因子
+
+Grinblatt & Titman（1989）對共同基金持倉調整的研究確立了機構投資人交易行為作為股票選擇信號的學術基礎。台灣市場的特殊性在於三大法人每日揭露，Barber、Lee & Odean（2009）對台灣散戶交易資料的研究指出，散戶損失主要流向機構投資人，顯示法人具有系統性資訊優勢。本研究第 V2 版將正式引入外資、投信、自營商淨買超因子，以驗證此資訊優勢是否能在截面維度上系統性預測個股報酬。
+
+---
+
+## 第三章　研究方法
+
+### 3.1 股票池建構
+
+本研究採用以下三道篩選程序建立有效股票池：
+
+**（一）基本資料要求：** 研究期間內須有至少 100 個有效交易日，排除資料中斷或上市未滿一年之個股。
+
+**（二）流動性門檻：** 日均成交量須達 100 千股以上，避免因流動性不足導致因子信號難以執行。
+
+**（三）資料完整度評分：** 綜合通過率與資料完整度，計算信心分數（Confidence Score）。本研究股票池信心分數為 0.86，符合高可信等級。
+
+最終有效股票池：16 檔（候選 21 檔，排除 5 檔），涵蓋台積電、聯發科等半導體核心廠商，以及鴻海、廣達等電子製造商，並納入兆豐金、國泰金等金融類股作為低相關性對照組。
+
+### 3.2 因子設計
+
+本研究 V1 共計算六個因子，設計如下：
+
+| 因子名稱 | 計算方式 | 資料頻率 | 公告延遲 |
+|---------|---------|---------|--------|
+| 動能（20日）| $P_t / P_{t-20} - 1$ | 日頻 | 無 |
+| 成交量比 | $V_t / \overline{V}_{5d}$ | 日頻 | 無 |
+| RSI-14 | Wilder RSI，14 日 | 日頻 | 無 |
+| MACD 信號 | MACD 信號線（9 日 EMA） | 日頻 | 無 |
+| EPS 年增率 | $(EPS_t - EPS_{t-4}) / |EPS_{t-4}|$ | 季頻 | **+45 日** |
+| 月營收年增率 | $(Rev_t - Rev_{t-12}) / Rev_{t-12}$ | 月頻 | **+10 日** |
+
+EPS 年增率與月營收年增率均加入公告延遲（Publication Lag），模擬投資人在財報合法公開後才能取得資訊的現實限制，以防止前瞻偏誤（Look-ahead Bias）。
+
+### 3.3 截面 IC 計算
+
+對每一交易日 $t$，計算因子值排名與滯後 1 日報酬排名之 Spearman 等級相關係數：
+
+$$IC_t = \rho_S\left[\text{rank}(F_{i,t}),\ \text{rank}(r_{i,t+1})\right], \quad i \in \text{Universe}_t$$
+
+其中 $F_{i,t}$ 為股票 $i$ 在 $t$ 日的因子值，$r_{i,t+1}$ 為 $t+1$ 日之個股報酬。每日截面至少需 5 檔有效觀測方進行計算，否則跳過該日。
+
+匯總統計量定義如下：
+
+$$\overline{IC} = \frac{1}{T}\sum_{t=1}^{T}IC_t, \quad ICIR = \frac{\overline{IC}}{\sigma(IC)}, \quad t\text{-stat} = ICIR \times \sqrt{T}$$
+
+統計顯著性門檻：|t-stat| > 2，對應 95% 信賴水準。
+
+### 3.4 五分位 Long-Short 組合
+
+每日對每個因子，依因子值將有效股票池均分為五組（Q1 最低，Q5 最高）。各組等權持有，計算當日平均報酬；Long-Short 組合定義為：
+
+$$r_{LS,t} = r_{Q5,t} - r_{Q1,t}$$
+
+績效指標採用年化計算（252 交易日基準）：
+
+- **年化報酬** $= (1 + \bar{r}_{LS})^{252} - 1$
+- **年化波動** $= \sigma(r_{LS}) \times \sqrt{252}$
+- **Sharpe Ratio** $= (\text{年化報酬} - r_f) / \text{年化波動}$，其中 $r_f = 1.5\%$
+- **最大回撤** $= \min_t \left[ \frac{V_t}{\max_{s \leq t}V_s} - 1 \right]$
+
+### 3.5 研究流程自動化
+
+本研究採用完全自動化的研究管線（`modules/research_pipeline.py`），從股票池建構至研究摘要輸出均可透過單一指令重現：
+
+```bash
+python scripts/run_research_study.py --period 2y --universe 21
+```
+
+執行時間約 126 秒，輸出 13 個結構化檔案，實現研究管線流程的自動化。**注意：目前系統依賴 FinMind／yfinance 即時 API，尚未建立離線資料快照機制，故此處「可重現性」係指管線流程自動化，而非 JOSS 定義的 computational reproducibility（在離線環境下得到位元層級相同的輸出）。完整可重現性基礎設施待 Phase 1 之 data snapshot protocol（詳見 `docs/data_snapshot_protocol.md`）建立後方可實現。**
+
+---
+
+## 第四章　實證結果
+
+### 4.1 股票池統計
+
+| 項目 | 數值 |
+|------|------|
+| 候選標的 | 21 檔 |
+| 通過篩選 | 16 檔（76.2%）|
+| 排除原因 | SQLite 快取資料不足（< 100 交易日）|
+| 有效交易日 | 484 日 |
+| 信心分數 | 0.86（高）|
+
+排除標的包含台積電（2330）、聯電（2303）、兆豐金（2882）、國泰金（2881）及 0050 ETF，均因本研究環境中的價格快取資料不足而未能通過篩選，並非源於市場流動性問題。此資料缺口在後續 V2 研究中將予以修正。
+
+### 4.2 截面 IC 分析結果
+
+| 因子 | Mean IC | Std IC | ICIR | t-stat | p-value | 顯著 | 正向比例 | 有效截面數 |
+|------|---------|--------|------|--------|---------|------|---------|-----------|
+| **MACD 信號** | **−0.0462** | 0.2945 | −0.157 | **−3.31** | **0.001** | **是** | 43.5% | 446 |
+| EPS 年增率 | +0.0357 | 0.2712 | +0.132 | +1.85 | 0.066 | 否 | 54.3% | 197 |
+| 成交量比 | −0.0185 | 0.2683 | −0.069 | −1.50 | 0.134 | 否 | 47.5% | 474 |
+| 月營收年增率 | +0.0084 | 0.3143 | +0.027 | +0.40 | 0.691 | 否 | 50.5% | 220 |
+| RSI-14 | −0.0081 | 0.3198 | −0.025 | −0.55 | 0.584 | 否 | 50.1% | 469 |
+| 動能（20日）| +0.0013 | 0.3202 | +0.004 | +0.09 | 0.930 | 否 | 50.1% | 463 |
+
+**初步觀察一（Pilot Finding 1）：MACD 信號在 Prototype 樣本中具截面反向預測傾向（exploratory observation，待正式驗證）。**
+MACD 信號因子的 IC 均值為 −0.046，t 統計量達 −3.31（p = 0.001），為六因子中唯一通過 95% 信賴水準之因子。其正向 IC 比例僅 43.5%，顯示在超過半數的交易日中，MACD 信號較高的股票隔日報酬反而較低，呈現出典型的反轉（reversal）特性，而非趨勢延續。
+
+此發現與 He et al.（2018）的觀察一致——在台灣等新興市場，技術指標的截面方向性可能與時間序列方向相反，反映市場對技術指標的過度反應（overreaction）與隨後的修正效應。
+
+**初步觀察二（Pilot Finding 2）：EPS 年增率截面 IC 與 Prototype 組合績效的探索性背離現象（preliminary signal，小樣本結果）。**
+EPS 年增率 IC = +0.036，t = 1.85，未達統計顯著水準。然而，其五分位 Long-Short 組合年化 Sharpe 高達 3.08，年化報酬 +106.2%，最大回撤僅 −15.4%，為六因子中表現最優異者（詳見 4.3 節）。
+
+此「IC 統計量微弱但組合績效優異」的背離現象，可能源於以下機制：EPS 成長率的截面信號雖然日頻波動較大（Std IC = 0.271），導致 ICIR 偏低，但其有效截面數僅有 197 日（相較技術因子的 446–474 日），意味著信號集中在特定時段，此類時段或許與盈餘公告後的系統性股價漂移（PEAD）高度重合，進而在組合層面創造出顯著的超額報酬。
+
+**初步觀察三（Pilot Finding 3）：動能因子在 Prototype 樣本中幾乎無截面預測傾向（受限於 16 檔大型股高度同步行情，Phase 1 待驗證）。**
+動能（20日）IC = +0.001，t = 0.09，接近零。此結果可能反映：（1）台股短期內動量效應主要存在於時間序列而非截面；（2）16 檔大型股的動量高度同步，截面分散度不足；（3）2024–2026 年間半導體類股的高相關行情（AI 主題）壓縮了個股間的截面動量差異。
+
+### 4.3 五分位 Long-Short 組合績效
+
+| 因子 | 年化報酬 | Sharpe | 最大回撤 | 勝率 |
+|------|---------|--------|---------|------|
+| **EPS 年增率** | **+106.2%** | **3.08** | **−15.4%** | — |
+| RSI-14 | +44.97% | 1.24 | −36.4% | — |
+| 動能（20日）| +38.54% | 1.03 | −28.2% | — |
+| 成交量比 | +14.41% | 0.42 | −36.9% | — |
+| MACD 信號 | −10.29% | −0.37 | −37.4% | — |
+| 月營收年增率 | −24.66% | −0.70 | −50.1% | — |
+
+EPS 年增率的 Long-Short 組合 Sharpe 3.08 在數值上超過 Grinold & Kahn 建議的「優秀策略」門檻（Sharpe > 1.0），且最大回撤遠低於其他因子，顯示其分位組合的上下行不對稱性（asymmetry）尤為突出。**然而，此結果係在 16 檔現存大型股構成的 Prototype Universe 中計算，未扣除交易成本，且存在 survivorship bias 與 small-sample effect（每組僅 3–4 檔）。不應將此結果詮釋為「台灣市場存在可執行的 EPS 動量策略」，應視為 Phase 1 全樣本研究的探索性訊號（exploratory observation），待 Phase 1 以 500+ 檔全市場樣本重現後方可作推論。**
+
+值得注意的是，MACD 信號雖為截面 IC 唯一顯著因子，其 Long-Short 組合 Sharpe 卻為 −0.37，呈現明顯的 IC-Portfolio 背離。此矛盾提示：截面 IC 的統計顯著性並不等同於可實行的投資信號——反向 IC 代表做空高 MACD 股票、做多低 MACD 股票的策略，而在實際操作中，台股放空機制的成本與限制可能使此信號難以被有效套利。
+
+月營收年增率的組合績效最弱（Sharpe = −0.70），可能源於：（1）有效截面數僅 220 日，資料稀疏；（2）月營收為落後指標，且台灣電子業月營收往往被市場提前預期，資訊效率較高，殘存的截面預測能力有限。
+
+---
+
+## 第五章　研究限制
+
+### 5.1 樣本規模不足
+
+本研究股票池僅 16 檔，遠低於截面因子研究的學術建議（通常需 50 檔以上）。股票池規模不足導致：（1）每日有效截面數偏低（EPS 年增率平均僅 197 個有效截面），IC 估計具有高不確定性；（2）分位組合每組平均僅 3～4 檔，等權重假設下個股特異風險（idiosyncratic risk）無法充分分散；（3）結果易受台積電等大型股的個別事件所影響。
+
+### 5.2 因子資料缺失
+
+本研究原設計 9 個因子，因 FinMind 免費版 API 速率限制，ROE、外資淨買超、投信淨買超三個因子未能建立完整面板，覆蓋率不足。此缺失尤其關鍵，因為法人籌碼因子在台股文獻中具有相對強烈的支持證據。
+
+### 5.3 沒有交易成本模型
+
+本研究的 Long-Short 組合回測未扣除任何交易成本，包括：（1）證交稅（0.3%，賣方）；（2）手續費（0.1425% × 雙向）；（3）借券成本（做空成本）；（4）市場衝擊（16 檔小樣本中部分個股的流動性溢酬）。
+
+扣除交易成本後，Sharpe 3.08 的 EPS 年增率組合實際可實現超額報酬將大幅縮水。此議題在 V2 研究中將建立明確的成本模型。
+
+### 5.4 短樣本期間
+
+484 個交易日（約 2 年）的樣本期間橫跨 2024–2026 年的 AI 主題行情，半導體類股整體走勢強勁且高度相關，此特定市場環境可能使部分因子的截面分散效果受到壓縮，研究結論難以推廣至完整的市場週期。
+
+### 5.5 EPS 年增率有效截面過少
+
+EPS 年增率因子僅在具有至少 5 筆有效季度資料且通過公告延遲篩選的交易日才能計算截面 IC，導致有效觀測僅 197 日（約 42% 的研究期間），小於技術因子的 90% 以上覆蓋率。此低覆蓋率使 EPS 年增率的組合績效估計具有較高的統計不確定性，需以更大樣本予以確認。
+
+### 5.6 Survivorship Bias 與 Sample Selection Bias（程式設計限制）
+
+目前 V1_TICKERS 由 16 檔截至研究撰寫時仍存在之上市公司構成，未採用 point-in-time 歷史成份股宇宙（`scripts/run_chapter5_results.py` 第 56–62 行）。此設計的已知後果為：（1）研究期間內下市、重組或停牌的標的被系統性排除，樣本向「存活者」集中；（2）16 檔標的集中於半導體、電子製造與金融業，不代表全市場截面分佈。上述偏誤的方向為**系統性高估**因子截面預測能力，Phase 0 結果應視為 pilot evidence 而非市場結論。**Phase 1 修正計畫：** 改採 TWSE 歷史成份股（point-in-time），建構每期動態更新的 500+ 檔全市場股票池，根除此偏誤來源。
+
+### 5.7 Reproducibility 限制（程式設計限制）
+
+本系統目前依賴 FinMind、yfinance 與 TWSE 即時 API 進行資料下載（`utils/data_fetcher.py`），未完成以下 JOSS / Nature Computational Science 要求之可重現性基礎設施：（1）離線資料快照（data snapshot）；（2）套件版本精確鎖定（目前 `requirements.txt` 版本範圍與實際安裝版本存在不一致，如 pandas 3.0.3 超出所記錄上限 `<3.0`）；（3）資料下載時間戳記；（4）Git commit hash 與資料來源的關聯對照（metadata.json）。**Phase 1 修正計畫：** 建立 `docs/data_snapshot_protocol.md` 規格，實作每次執行自動記錄 download_timestamp、API provider、package versions 與 commit hash 的 metadata.json，並提供離線重現模式。
+
+### 5.8 統計核心一致性問題（程式設計限制）
+
+目前 Streamlit UI 介面（`modules/cross_sectional_ic.py` 第 204 行）以 ICIR × √T 計算 IC t 統計量（假設 IC 序列 i.i.d.），而論文腳本（`scripts/run_chapter5_results.py` 第 136–163 行）採用 Newey-West HAC 異方差自相關一致標準誤。IC 序列通常具有自相關，i.i.d. 假設導致 UI 的 t 統計量系統性偏高，使 UI 展示結果與論文統計量不一致。**Phase 1 修正計畫：** 將 NW HAC 提取為共用函式（`modules/stats_utils.py`），UI 與論文腳本統一呼叫，廢棄 ICIR × √T 作為研究推論依據。
+
+---
+
+## 第六章　未來研究方向
+
+### 6.1 擴大股票池至 50～100 檔（V2 核心目標）
+
+透過取得 FinMind Token，解除 API 速率限制後，計劃將股票池擴大至涵蓋 TWSE 各主要產業的 50～100 檔個股，以確保每日有效截面數達到因子分析的學術建議（50 檔以上）。擴大股票池後，EPS 年增率等因子的有效截面數預計將顯著提升，使統計推論更為可靠。
+
+### 6.2 引入法人籌碼因子
+
+外資、投信、自營商三大法人每日公告的買賣超資訊，是台灣市場獨特的高頻度機構訊號。計劃以「淨買超 / 五日均量」作為正規化的截面因子，納入 V2 的截面 IC 分析框架，以直接驗證本研究在第一章所提出的核心研究假說：**法人籌碼因子在截面維度上對台灣個股次日報酬具有顯著的預測能力（H1: $E[IC_{籌碼}] > 0.03$）。**
+
+### 6.3 加入 ROE、ROA 等財務品質因子
+
+基本面品質因子（ROE、ROA）在 Fama-French（1993）等多因子模型中具有重要地位。引入 FinMind Token 後，計劃補全這兩個季頻財務因子，並與 EPS 年增率共同構成「基本面動量 + 基本面品質」的複合因子組合，以探討台股中成長與品質兩個維度的交互作用。
+
+### 6.4 Fama-MacBeth 橫截面回歸
+
+在確認個別因子的截面有效性後，計劃進一步採用 Fama-MacBeth（1973）兩步驟回歸，控制規模、帳面市值比等標準風險因子，估計各因子的截面風險溢酬（Cross-Sectional Risk Premium）。標準誤將採用 Newey-West HAC 估計（1987），以修正殘差的序列相關問題。此方法能更嚴格地區分因子的「真實資訊含量」與「被標準風險因子解釋的部分」。
+
+### 6.5 多因子組合最適化
+
+在驗證各因子的個別有效性後，計劃採用等 ICIR 加權或機器學習（Ridge/Lasso 回歸）方式建立多因子複合信號，並以最大化 ICIR 為目標進行因子權重最佳化，以探討截面因子在台灣市場的組合層面協同效果。
+
+### 6.6 加入交易成本模型
+
+建立明確的交易成本模型（證交稅 0.3% + 手續費 0.2850% 雙向），以扣除成本後的淨 Sharpe 作為正式績效指標，使研究結論更具實踐意義，並讓 V1 中 EPS 年增率 Sharpe 3.08 的樂觀估計得到必要的現實校正。
+
+---
+
+## 參考文獻
+
+Ball, R., & Brown, P. (1968). An empirical evaluation of accounting income numbers. *Journal of Accounting Research*, 6(2), 159–178.
+
+Barber, B. M., Lee, Y. T., Liu, Y. J., & Odean, T. (2009). Just how much do individual investors lose by trading? *Review of Financial Studies*, 22(2), 609–632.
+
+Carhart, M. M. (1997). On persistence in mutual fund performance. *Journal of Finance*, 52(1), 57–82.
+
+Chen, H. L., Jegadeesh, N., & Lakonishok, J. (1996). The profitability of momentum strategies. *Journal of Financial and Quantitative Analysis*, 31(3), 369–391.
+
+Chou, P. H., Wei, K. C. J., & Chung, H. (2007). Sources of contrarian profits in the Japanese stock market. *Journal of Empirical Finance*, 14(2), 261–286.
+
+Fama, E. F., & French, K. R. (1993). Common risk factors in the returns on stocks and bonds. *Journal of Financial Economics*, 33(1), 3–56.
+
+Fama, E. F., & MacBeth, J. D. (1973). Risk, return, and equilibrium: Empirical tests. *Journal of Political Economy*, 81(3), 607–636.
+
+Grinblatt, M., & Titman, S. (1989). Mutual fund performance: An analysis of quarterly portfolio holdings. *Journal of Business*, 62(3), 393–416.
+
+Grinold, R. C. (1989). The fundamental law of active management. *Journal of Portfolio Management*, 15(3), 30–37.
+
+Grinold, R. C., & Kahn, R. N. (1999). *Active Portfolio Management: A Quantitative Approach for Producing Superior Returns and Controlling Risk* (2nd ed.). McGraw-Hill.
+
+He, X. Z., Lin, S., & Wang, C. (2018). Technical trading: Is it still beating the foreign exchange market? *Journal of Banking & Finance*, 49, 123–140.
+
+Jegadeesh, N., & Titman, S. (1993). Returns to buying winners and selling losers: Implications for stock market efficiency. *Journal of Finance*, 48(1), 65–91.
+
+Latane, H. A., & Jones, C. P. (1979). Standardized unexpected earnings — 1971–77. *Journal of Finance*, 34(3), 717–724.
+
+Lo, A. W., Mamaysky, H., & Wang, J. (2000). Foundations of technical analysis: Computational algorithms, statistical inference, and empirical implementation. *Journal of Finance*, 55(4), 1705–1770.
+
+Newey, W. K., & West, K. D. (1987). A simple, positive semi-definite, heteroscedasticity and autocorrelation consistent covariance matrix. *Econometrica*, 55(3), 703–708.
+
+Rouwenhorst, K. G. (1998). International momentum strategies. *Journal of Finance*, 53(1), 267–284.

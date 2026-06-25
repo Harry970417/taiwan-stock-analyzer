@@ -1,0 +1,5 @@
+﻿is_months,oos_months,n_folds,mean_sharpe_a,mean_sharpe_b,mean_diff,ci_lo_95,ci_hi_95,p_bootstrap,status
+24,6,6,1.5087,0.1898166666666666,-1.1814,-3.1911,0.6163,0.888,completed
+36,6,4,0.7892666666666667,0.5199,-0.3381,,,0.5,completed
+36,12,2,-0.4874,-0.11649999999999999,,,,,completed
+48,6,2,2.1435999999999997,-0.55355,-2.6971,,,1.0,completed

@@ -21,7 +21,9 @@ from modules.cross_sectional_ic import (
 )
 
 N_QUANTILES = 5
-ANNUAL_FACTOR = 252  # 年化基礎（交易日）
+# Taiwan Stock Exchange averages ~248 trading days/year (246–250 range).
+# Using 252 (US convention) overstates annualised Sharpe by ~1.6%.
+ANNUAL_FACTOR = 248
 
 
 # ---------------------------------------------------------------------------
