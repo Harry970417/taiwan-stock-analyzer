@@ -115,8 +115,8 @@ def fetch_portfolio_data(tickers: list, period: str = "2y") -> dict:
     # Combine into a single DataFrame, align by date (inner join)
     prices_df = pd.DataFrame(prices_dict)
     prices_df = prices_df.sort_index()
-    # Use forward-fill then backfill to handle occasional missing trading days
-    prices_df = prices_df.ffill(limit=3).bfill(limit=3)
+    # Forward-fill only: backfill would use future prices to fill earlier gaps.
+    prices_df = prices_df.ffill(limit=3)
 
     returns_df = prices_df.pct_change().dropna(how="all")
 
