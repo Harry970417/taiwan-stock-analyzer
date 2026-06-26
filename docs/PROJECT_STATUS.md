@@ -61,7 +61,7 @@ Phase 1   ████████░░░░░░░░░░░░   42%
 | `run_phase1.py` | Phase 1 完整 Pipeline 入口（Steps A-L） | ✅ |
 | `scripts/run_phase1_execute.py` | 詳細執行腳本（⚠️ tabulate 依賴問題） | ⚠️ |
 
-**測試覆蓋**：145 / 145 通過（pytest，2026-06-19）
+**測試覆蓋**：158 passed, 1 warning（pytest）
 
 **工程問題修正（since Phase 0）**：
 - ✅ ARCH-1：stats_utils.py 統一 NW HAC（消除雙軌）
@@ -130,7 +130,7 @@ Phase 1   ████████░░░░░░░░░░░░   42%
 |---|---|---|---|
 | M0 | Phase 0 數據鎖定（chapter5_summary.json）| 2026-06-13 | ✅ Done |
 | M1 | Proposal_Repositioned.docx 完成並凍結 | 2026-06-19 | ✅ Done |
-| M2 | Phase 1 基礎設施（10 模組 + 145 測試）| 2026-06-19 | ✅ Done |
+| M2 | Phase 1 基礎設施（10 模組 + 158 tests）| 2026-06-19 | ✅ Done |
 | M3 | Phase 1 V1 Pilot Run（H1-H4 結果）| 2026-06-19 | ✅ Done |
 | M4 | Full Market 資料下載完成（D1-D9）| TBD | ⬜ |
 | M5 | Phase 1 Full Market Run 完成 | TBD | ⬜ |

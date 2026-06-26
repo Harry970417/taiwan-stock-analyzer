@@ -11,7 +11,7 @@
 | Phase | Description | Status | Key Metric |
 |-------|-------------|--------|-----------|
 | 0 - Exploratory | N=16 stocks, CAPM, 2022-2024 | Complete | IC=0.5429, alpha=102.84%* |
-| 1 - Data Pipeline | Steps A-L, 10 modules | Complete | 155 passed, 1 warning |
+| 1 - Data Pipeline | Steps A-L, 10 modules | Complete | 158 passed, 1 warning |
 | 1b - V1 Pilot | H1-H4 pilot run, N=16 | Complete | Pilot evidence only |
 | 2 - Full-Market Study | N~900+, 10+ yr, FF5 | Not started / in development | Pending |
 | 3 - Factor Refinement | LASSO, IC-weighted, OOS validation | Planned | Pending |
@@ -32,7 +32,7 @@ The reported Phase 0 and Phase 1 V1 results are pilot evidence for methodology d
 
 ## Why This Repository Matters
 
-- **Reproducible by design** - T+1 execution constraint, snapshot protocol, 155 passing pytest checks, and deterministic pipeline components.
+- **Reproducible by design** - T+1 execution constraint, snapshot protocol, 158 passing pytest checks, and deterministic pipeline components.
 - **Honest empirics** - Phase 0 and V1 pilot results are reported with methodological limitations and are not packaged as investment conclusions.
 - **Taiwan-specific factor research** - Three-institution mandatory flow disclosure is operationalized as a quantitative factor signal.
 - **Full research pipeline** - Raw multi-source API ingestion, financial validation, feature engineering, statistical testing, and report output live in one codebase.
@@ -356,7 +356,7 @@ flowchart TD
 
 ### Validation
 
-All input data passes through `validators/financial_validator.py`, which enforces rules for price continuity, trading halt flags, return outlier thresholds, and data gap patterns specific to TWSE reporting conventions. The validation layer is covered by the project pytest suite. The current baseline is `155 passed, 1 warning`; the warning is a local `.pytest_cache` permission issue, not a functional or test failure.
+All input data passes through `validators/financial_validator.py`, which enforces rules for price continuity, trading halt flags, return outlier thresholds, and data gap patterns specific to TWSE reporting conventions. The validation layer is covered by the project pytest suite. The current baseline is `158 passed, 1 warning`; the warning is a local `.pytest_cache` permission issue, not a functional or test failure.
 
 ---
 
@@ -370,7 +370,7 @@ flowchart LR
     Root --> STR["strategies/\nBacktesting"]
     Root --> UTL["utils/\nInfrastructure"]
     Root --> VAL["validators/\nData quality"]
-    Root --> TST["tests/\n155 pytest checks"]
+    Root --> TST["tests/\n158 pytest checks"]
     Root --> PAG["pages/\nResearch interface"]
 
     MOD --> MF["multi_factor.py\nFactor composite scoring"]
@@ -413,8 +413,7 @@ taiwan-stock-analyzer/
 ├── validators/
 │   └── financial_validator.py       # Financial data validation (TWSE-specific rules)
 │
-├── tests/
-│   └── test_financial_validator.py  # Unit test suite (pytest, 145 cases)
+├── tests/                           # Unit test suite (158 pytest checks)
 │
 ├── pages/                           # Research interface modules (Streamlit)
 ├── app.py                           # Research environment entry point
@@ -429,7 +428,7 @@ taiwan-stock-analyzer/
 
 | Property | Implementation |
 |----------|---------------|
-| Test framework | pytest baseline: `155 passed, 1 warning` |
+| Test framework | pytest baseline: `158 passed, 1 warning` |
 | Look-ahead prevention | T+1 execution constraint in all backtesting |
 | Pipeline determinism | All computations are deterministic given fixed input data |
 | Data transparency | Missing values reported as N/A; no silent imputation |
@@ -461,7 +460,7 @@ taiwan-stock-analyzer/
 Implemented an end-to-end, fully reproducible data pipeline for TWSE equity research:
 - Steps A through L: raw data ingestion, parsing, cleaning, financial validation, feature engineering, and factor computation
 - 10 modular components with standardized interfaces
-- Current pytest baseline: `155 passed, 1 warning` (`.pytest_cache` permission warning only)
+- Current pytest baseline: `158 passed, 1 warning` (`.pytest_cache` permission warning only)
 - Deterministic execution: identical outputs given the same input data across runs
 
 ### Phase 2 - Full-Market Empirical Study (Not started / in development)

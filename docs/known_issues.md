@@ -146,7 +146,7 @@
 17. `tests/test_stats_utils.py`：NW HAC 統計函式測試（29 項）
 18. `tests/test_fmb.py`：Fama-MacBeth 測試（17 項）
 19. `tests/test_walk_forward.py`：Walk-Forward 測試（19 項）
-**全部 145 個測試通過（pytest，2026-06-19）**
+**目前測試基準：158 passed, 1 warning（pytest）**
 
 ---
 
