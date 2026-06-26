@@ -23,4 +23,4 @@ if env_path.exists():
             break
 if not token:
     token = os.environ.get("FINMIND_TOKEN", "")
-print(f"\nFinMind token: {'PRESENT (' + token[:6] + '...)' if token else 'NOT FOUND'}")
+print(f"\nFINMIND_TOKEN: {'PRESENT' if token else 'MISSING'}")

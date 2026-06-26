@@ -13,7 +13,7 @@ if env_path.exists():
 if not token:
     token = os.environ.get("FINMIND_TOKEN", "")
 
-print(f"Token found: {bool(token)} ({token[:20]}...)" if token else "Token NOT found")
+print(f"FINMIND_TOKEN: {'PRESENT' if token else 'MISSING'}")
 
 # Verify FinMind connection
 from modules.finmind_client import FinMindClient
