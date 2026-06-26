@@ -320,7 +320,7 @@ python scripts/run_phase1_execute.py
 - Python 主線環境已統一為 3.11。
 - `requirements.txt` 已與 `pyproject.toml` 的 `pandas<3`、`numpy<2` 約束對齊。
 - `python -m compileall modules utils validators strategies pages tests -q` 已通過。
-- `python -m pytest tests/ --maxfail=10 -q` 已通過，結果為 `158 passed, 1 warning`。
+- `python -m pytest tests/ --maxfail=10 -q` 已通過，結果為 `160 passed, 1 warning`。
 - pytest warning 是 `.pytest_cache` 權限問題，不是測試失敗。
 - 目前未提交、未推送。
 - 工作區仍有大量既有變更，未來 Codex 不可擅自還原。
