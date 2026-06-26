@@ -159,17 +159,14 @@ def create_labels(df: pd.DataFrame) -> pd.DataFrame:
         - label_1d：隔日是否上漲（close[t+1] > close[t]）
         - label_3d：未來 3 日是否上漲（close[t+3] > close[t]）
         - label_5d：未來 5 日是否上漲（close[t+5] > close[t]）
+
+    尾端若沒有足夠未來價格，標籤保留 NaN，避免未知結果被誤標成 0。
     """
     df = df.copy()
 
-    # 隔日漲跌
-    df["label_1d"] = (df["close"].shift(-1) > df["close"]).astype(int)
-
-    # 未來 3 日漲跌
-    df["label_3d"] = (df["close"].shift(-3) > df["close"]).astype(int)
-
-    # 未來 5 日漲跌
-    df["label_5d"] = (df["close"].shift(-5) > df["close"]).astype(int)
+    for horizon, label_col in [(1, "label_1d"), (3, "label_3d"), (5, "label_5d")]:
+        future = df["close"].shift(-horizon)
+        df[label_col] = (future > df["close"]).where(future.notna()).astype(float)
 
     return df
 
