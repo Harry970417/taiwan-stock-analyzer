@@ -1,0 +1,39 @@
+# Secrets must never enter the Docker build context
+.env
+.env.*
+.streamlit/secrets.toml
+
+# Version control
+.git/
+.gitignore
+
+# Local agent configuration
+.codex/
+.claude/
+.agents/
+
+# Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+.pytest_cache/
+.coverage
+
+# Data / research artifacts not needed inside the runtime image
+data/*.db
+exports/
+results/
+logs/
+
+# Docs and research material not needed at runtime
+docs/
+thesis/
+tests/
+backup_before_merge/
+
+# Dev/OS artifacts
+*.patch
+.vscode/
+.idea/
+.DS_Store
+Thumbs.db
