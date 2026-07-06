@@ -6,22 +6,18 @@ dependencies:
   - python=3.11
   - pip
   - pip:
-    # --- 以下為 Phase 0 實際執行環境之已知版本 ---
-    # ⚠️ 注意：requirements.txt 中 pandas<3.0、numpy<2.0 的上限
-    #    與實際安裝版本（pandas 3.0.3、numpy 2.4.6）不一致。
-    #    此不一致係 Phase 0 已知 reproducibility 問題之一（詳見 reproducibility_manifest.md）。
-    #    Phase 1 將以 pip freeze 輸出完整精確版本取代本文件。
+    # --- Phase 1 mainline: aligned with requirements.txt and pyproject.toml ---
     - streamlit==1.58.0
-    - pandas==3.0.3
-    - numpy==2.4.6
+    - pandas>=2.0.0,<3.0
+    - numpy>=1.24.0,<2.0
     - yfinance==1.4.1
     - plotly==6.8.0
     - matplotlib==3.10.9
-    - scikit-learn  # 版本未記錄，Phase 1 補完
+    - scikit-learn>=1.3.0
     - scipy==1.17.1
     - ta==0.11.0
     - sqlalchemy==2.0.50
-    - openpyxl       # 版本未記錄，Phase 1 補完
+    - openpyxl>=3.1.0
     - requests==2.34.2
     - pytz==2026.2
 
@@ -30,5 +26,9 @@ dependencies:
 # conda activate taiwan-stock-analyzer
 # streamlit run app.py
 #
-# ⚠️ 此 environment.yml 為 Phase 0 最佳估計版本，非完整精確 freeze。
-#    computational reproducibility 需等 Phase 1 data snapshot protocol 完成後方可保證。
+# This environment is intentionally range-based for the Python 3.11 mainline.
+# Use snapshot metadata for exact data provenance in research runs.
+#
+# ⚠️ Known version conflict: the environment that actually produced
+# results/metadata.json (Python 3.14.5, pandas 3.0.3, numpy 2.4.6) exceeds
+# the caps above. Tracked as Critical/Acknowledged in reproducibility_manifest.md.
