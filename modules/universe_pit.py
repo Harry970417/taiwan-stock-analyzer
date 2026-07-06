@@ -15,6 +15,7 @@ reproducibility_manifest.md.
 """
 
 import time
+import numpy as np
 import requests
 import pandas as pd
 from typing import Optional, List
