@@ -398,7 +398,14 @@ taiwan-stock-analyzer/
 │   ├── data_quality.py              # Data quality assessment and anomaly detection
 │   ├── predictor.py                 # Cross-sectional scoring and ranking model
 │   ├── report_generator.py          # Structured research output generation
-│   └── explainability.py            # Factor contribution decomposition
+│   ├── explainability.py            # Factor contribution decomposition
+│   ├── stats_utils.py               # Unified Newey-West HAC statistical engine (Phase 1)
+│   ├── cross_sectional_ic.py        # Cross-sectional IC calculation engine (Phase 1)
+│   ├── fama_macbeth.py              # Fama-MacBeth two-stage regression + Wald test (Phase 1)
+│   ├── universe_pit.py              # Point-in-time universe construction (Phase 1)
+│   ├── event_window.py              # Event-conditional IC analysis (Phase 1)
+│   ├── market_cap_stratify.py       # Market-cap-stratified Jensen's alpha (Phase 1)
+│   └── walk_forward.py              # Rolling walk-forward validation (Phase 1)
 │
 ├── strategies/                      # Backtesting strategy implementations
 │   ├── ma_strategy.py               # Moving average crossover

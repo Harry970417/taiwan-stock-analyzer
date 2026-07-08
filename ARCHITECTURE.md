@@ -3,7 +3,7 @@
 ```
 ┌─────────────────────────────────────────────────────────────────────────────┐
 │                        使用者（瀏覽器）                                       │
-│              https://taiwan-stock-analyzer-xxx.streamlit.app                │
+│     https://taiwan-stock-analyzer-7l4sqvxejctnskdfahytmc.streamlit.app      │
 └───────────────────────────────┬─────────────────────────────────────────────┘
                                 │  HTTPS
                                 ▼
