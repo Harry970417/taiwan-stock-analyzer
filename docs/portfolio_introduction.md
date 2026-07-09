@@ -3,7 +3,7 @@
 **專案名稱：** 台灣股票量化研究平台（Taiwan Stock Analyzer）
 **開發語言：** Python 3.11+
 **技術棧：** Streamlit · Pandas · NumPy · SciPy · Plotly · SQLite · yfinance · FinMind API
-**程式碼規模：** 14 個互動頁面 · 22 個業務模組 · 36 個單元測試 · 5 個重構階段
+**程式碼規模：** 14 個互動頁面 · 33 個業務模組 · 160 個單元測試 · 5 個重構階段
 
 ---
 
