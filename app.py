@@ -123,6 +123,12 @@ if not run_button:
     with st.spinner("載入今日市場資料中..."):
         mkt = get_market_overview()
 
+    data_date = mkt.get("data_date")
+    if data_date:
+        st.caption(f"📅 資料更新至：**{data_date}**（台灣證券交易所收盤資料，非即時報價） · 頁面渲染時間 {mkt.get('update_time','')}")
+    else:
+        st.caption("⚠️ 無法取得資料日期，以下市場資料可能為快取或過期，請留意下方錯誤訊息")
+
     # ── 市場情緒 KPI ──
     section_header("今日市場情緒")
 

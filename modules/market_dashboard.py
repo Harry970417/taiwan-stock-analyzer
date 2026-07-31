@@ -28,13 +28,24 @@ def get_market_overview() -> dict:
         "weak_sectors":  [],
         "error":         None,
         "update_time":   datetime.now().strftime("%H:%M:%S"),
+        "data_date":     None,  # 資料實際所屬交易日（非頁面渲染時間），可能落後於「今天」
     }
-    
+
     try:
         resp = requests.get(url, headers=headers, timeout=12)
         data = resp.json()
         df   = pd.DataFrame(data)
-        
+
+        # TWSE 回傳的 Date 是民國年（例：1150730 = 2026-07-30），
+        # 用來讓使用者知道「資料實際更新到哪一天」，而非誤以為是即時資料
+        if not df.empty and "Date" in df.columns:
+            try:
+                roc_date = str(df["Date"].iloc[0])
+                ad_year  = int(roc_date[:-4]) + 1911
+                result["data_date"] = f"{ad_year}-{roc_date[-4:-2]}-{roc_date[-2:]}"
+            except (ValueError, IndexError):
+                pass
+
         # 基本欄位整理
         df = df.rename(columns={
             "Code": "ticker", "Name": "name",
