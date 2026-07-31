@@ -191,7 +191,7 @@ def _build_cover(ticker: str, report_date: str) -> str:
 
 def _build_data_quality_section(dq: dict) -> str:
     if not dq:
-        return '<div class="warn-box">Data quality check not available.</div>'
+        return '<div class="warn-box">資料品質檢查暫時無法取得。</div>'
 
     score = dq.get("score", 0)
     grade = dq.get("grade", "D")
@@ -287,7 +287,7 @@ def _build_data_quality_section(dq: dict) -> str:
 
 def _build_factor_section(factor_data: dict) -> str:
     if not factor_data:
-        return '<div class="warn-box">Factor analysis data not available.</div>'
+        return '<div class="warn-box">多因子分析資料暫時無法取得。</div>'
 
     # factor_data may be structured as {"ic_stats": {...}, "ic_weights": {...}}
     # or directly as the ic_stats dict — handle both
@@ -360,7 +360,7 @@ def _build_factor_section(factor_data: dict) -> str:
 
 def _build_backtest_section(bt_data: dict) -> str:
     if not bt_data:
-        return '<div class="warn-box">Backtest results not available.</div>'
+        return '<div class="warn-box">回測結果暫時無法取得。</div>'
 
     is_metrics = bt_data.get("in_sample", {})
     oos_metrics = bt_data.get("out_of_sample", {})
@@ -426,7 +426,7 @@ def _build_backtest_section(bt_data: dict) -> str:
 
 def _build_risk_section(risk_data: dict) -> str:
     if not risk_data:
-        return '<div class="warn-box">Risk metrics not available.</div>'
+        return '<div class="warn-box">風險指標暫時無法取得。</div>'
 
     # page 14 stores keys as: "metrics", "var", "cvar", "beta_alpha", "stress"
     metrics = risk_data.get("metrics", risk_data.get("portfolio_metrics", {}))
@@ -518,11 +518,10 @@ def _build_risk_section(risk_data: dict) -> str:
 
 def _build_fundamental_section(fin_summary: dict) -> str:
     if not fin_summary:
-        return '<div class="warn-box">Fundamental data not available (FinMind API).</div>'
+        return '<div class="warn-box">基本面資料暫時無法取得。</div>'
 
-    error = fin_summary.get("error")
-    if error:
-        return f'<div class="warn-box">FinMind API error: {error}</div>'
+    if fin_summary.get("error"):
+        return '<div class="warn-box">基本面資料暫時無法取得，請稍後再試。</div>'
 
     rows = [
         ["EPS (latest quarter)", _fmt(fin_summary.get("eps"), ".2f"), "TWD"],

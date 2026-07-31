@@ -2,9 +2,12 @@
 # Research Report Generator
 # Combines all analyses into a downloadable academic-style HTML report
 
+import logging
 import streamlit as st
 import pandas as pd
 import datetime
+
+logger = logging.getLogger(__name__)
 
 from utils.data_fetcher    import get_stock_data
 from utils.indicators      import add_all_indicators
@@ -109,7 +112,9 @@ try:
         "end":   str(df["date"].max().date()),
     }
 except Exception as e:
-    st.error(f"❌ 無法下載資料：{e}"); st.stop()
+    logger.error(f"下載歷史資料失敗（ticker={ticker}）：{e}")
+    st.error("❌ 目前無法取得歷史資料，請確認股票代號是否正確，或稍後再試。")
+    st.stop()
 
 progress.progress(20, text="資料下載完成")
 
@@ -121,7 +126,8 @@ if include_dq:
         xval = cross_validate_sources(ticker)
         report_data["data_quality"] = {**dq, "cross_validate": xval}
     except Exception as e:
-        report_data["data_quality"] = {"error": str(e), "score": None, "grade": "N/A"}
+        logger.error(f"資料品質驗證失敗（ticker={ticker}）：{e}")
+        report_data["data_quality"] = {"error": "資料品質驗證暫時無法完成", "score": None, "grade": "N/A"}
 
 progress.progress(40, text="資料驗證完成")
 
@@ -140,7 +146,8 @@ if include_mf:
         }
         report_data["backtest_wf"] = wf_result
     except Exception as e:
-        report_data["factor_analysis"] = {"error": str(e)}
+        logger.error(f"多因子分析失敗（ticker={ticker}）：{e}")
+        report_data["factor_analysis"] = {"error": "多因子分析暫時無法完成"}
 
 progress.progress(60, text="多因子分析完成")
 
@@ -179,7 +186,8 @@ if include_risk:
                 "stress": stress,
             }
     except Exception as e:
-        report_data["risk_metrics"] = {"error": str(e)}
+        logger.error(f"風險指標計算失敗（ticker={ticker}）：{e}")
+        report_data["risk_metrics"] = {"error": "風險指標暫時無法計算"}
 
 progress.progress(80, text="風險分析完成")
 
@@ -190,7 +198,8 @@ if include_fund:
         fin = parse_financial_summary(ticker)
         report_data["fin_summary"] = fin
     except Exception as e:
-        report_data["fin_summary"] = {"error": str(e)}
+        logger.error(f"基本面資料取得失敗（ticker={ticker}）：{e}")
+        report_data["fin_summary"] = {"error": "基本面資料暫時無法取得"}
 
 progress.progress(100, text="所有分析完成！")
 status.success("✅ 分析完成，報告已準備好")
@@ -290,7 +299,7 @@ try:
         </div>""", unsafe_allow_html=True)
 
 except Exception as e:
-    st.error(f"報告生成失敗：{e}")
-    st.exception(e)
+    logger.error(f"報告生成失敗（ticker={ticker}）：{e}")
+    st.error("❌ 報告生成失敗，請稍後再試；若持續發生，請確認股票代號是否正確。")
 
 st.caption("報告為 HTML 格式，自包含所有圖表與樣式，可在任何瀏覽器開啟。內容僅供學術研究使用。")

@@ -57,7 +57,8 @@ def fetch_stock_data(ticker: str, period: str = "2y") -> pd.DataFrame:
         required = ["date", "open", "high", "low", "close", "volume"]
         missing = [c for c in required if c not in raw.columns]
         if missing:
-            raise ValueError(f"缺少欄位：{missing}，現有欄位：{raw.columns.tolist()}")
+            print(f"[data_fetcher] {ticker} 缺少欄位：{missing}，現有欄位：{raw.columns.tolist()}")
+            raise ValueError(f"{ticker} 的股價資料格式異常，請稍後再試。")
 
         df = raw[required].copy()
         df["date"] = pd.to_datetime(df["date"])
@@ -73,7 +74,8 @@ def fetch_stock_data(ticker: str, period: str = "2y") -> pd.DataFrame:
     except ValueError:
         raise
     except Exception as e:
-        raise ValueError(f"下載資料失敗：{e}")
+        print(f"[data_fetcher] {ticker} 下載資料失敗：{e}")
+        raise ValueError(f"下載 {ticker} 資料失敗，請稍後再試。")
 
 def _sanitize_ticker(ticker: str) -> str:
     """Validate ticker to prevent SQL injection via table name concatenation.
@@ -82,10 +84,7 @@ def _sanitize_ticker(ticker: str) -> str:
     Raises ValueError for any ticker that contains other characters.
     """
     if not re.fullmatch(r'[A-Za-z0-9_.\\-]+', ticker):
-        raise ValueError(
-            f"Ticker '{ticker}' contains invalid characters. "
-            "Only A-Z, a-z, 0-9, '_', '.', '-' are permitted."
-        )
+        raise ValueError(f"股票代號「{ticker}」格式不正確，請確認代號是否正確。")
     return ticker
 
 def _period_slug(period: str) -> str:

@@ -161,7 +161,8 @@ def fetch_realtime_quote(ticker: str) -> dict:
         }
         
     except Exception as e:
-        raise ValueError(f"取得 {ticker} 資料失敗：{e}")
+        print(f"[data_source] {ticker} 取得報價失敗：{e}")
+        raise ValueError(f"取得 {ticker} 報價失敗，請稍後再試。")
 
 
 def get_stock_name(ticker: str) -> str:
