@@ -216,20 +216,20 @@ def calc_confidence(
         confidence = min(confidence, 45)  # 強制降低
 
     if confidence >= 75:
-        level = "High"
+        level = "高"
         color = "#16A34A"
     elif confidence >= 55:
-        level = "Moderate"
+        level = "中等"
         color = "#F59E0B"
     else:
-        level = "Low"
+        level = "低"
         color = "#DC2626"
 
     return {
         "score":  confidence,
         "level":  level,
         "color":  color,
-        "detail": f"Data completeness {data_completeness*100:.0f}% · Signals {n_signals}"
+        "detail": f"資料完整度 {data_completeness*100:.0f}% · 訊號數 {n_signals}"
     }
 
 

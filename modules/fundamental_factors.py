@@ -269,7 +269,7 @@ def calc_fundamental_score(fund: dict, quote: dict = None) -> dict:
     weights = {"growth":0.25,"quality":0.35,"valuation":0.25,"cash_flow":0.15}
     avail_w = {k:v for k,v in weights.items() if dim_scores.get(k) is not None}
     if not avail_w:
-        return {"score":None,"grade":"N/A","quality":"Insufficient Data","confidence":None,
+        return {"score":None,"grade":"N/A","quality":"資料不足","confidence":None,
                 "notes":[],"alerts":alerts,"warnings":warnings,"available_dims":0,
                 "dim_scores":dim_scores,"has_mapping_issue":has_issue}
 
@@ -279,11 +279,11 @@ def calc_fundamental_score(fund: dict, quote: dict = None) -> dict:
     if has_issue:      score = min(score, 50)
     if available_dims < 3: score = min(score, 60)
 
-    if score >= 80:   grade="A+"; ql="Exceptional"
-    elif score >= 65: grade="A";  ql="Strong"
-    elif score >= 45: grade="B";  ql="Adequate"
-    elif score >= 30: grade="C";  ql="Weak"
-    else:             grade="D";  ql="Poor"
+    if score >= 80:   grade="A+"; ql="卓越"
+    elif score >= 65: grade="A";  ql="優異"
+    elif score >= 45: grade="B";  ql="尚可"
+    elif score >= 30: grade="C";  ql="偏弱"
+    else:             grade="D";  ql="不佳"
 
     conf = calc_confidence(available_dims/7, 0.75, available_dims, 3)
     return {"score":score,"grade":grade,"quality":ql,"confidence":conf,
@@ -294,15 +294,15 @@ def calc_fundamental_score(fund: dict, quote: dict = None) -> dict:
 def generate_fundamental_commentary(fund, fscore, ticker):
     grade=fscore.get("grade","N/A"); score=fscore.get("score")
     quality=fscore.get("quality",""); conf=fscore.get("confidence",{})
-    conf_level=conf.get("level","Low") if conf else "Low"
+    conf_level=conf.get("level","低") if conf else "低"
     if score is None:
-        return f"Fundamental data for **{ticker}** is insufficient for scoring."
-    lines=[f"**{ticker}** earns Fundamental Quality **{grade} ({score}/100 — {quality})** with **{conf_level}** confidence."]
+        return f"**{ticker}** 的基本面資料不足，暫無法計算評分。"
+    lines=[f"**{ticker}** 基本面品質評等為 **{grade}（{score}/100 — {quality}）**，信心水準**{conf_level}**。"]
     roe=fund.get("roe"); gm=fund.get("gross_margin"); nm=fund.get("net_margin")
     yoy=fund.get("revenue_yoy"); pe=fund.get("pe_ratio"); eps=fund.get("eps")
-    if roe: lines.append(f"ROE of {roe:.1f}% reflects {'exceptional' if roe>25 else 'above-average' if roe>15 else 'below-benchmark'} capital efficiency.")
-    if gm and nm: lines.append(f"Gross margin {gm:.1f}%, net margin {nm:.1f}% — spread of {gm-nm:.1f}pp absorbed by operating costs and taxes.")
-    if yoy: lines.append(f"Revenue {'growing' if yoy>0 else 'declining'} {abs(yoy):.1f}% YoY.")
-    if pe: lines.append(f"P/E {pe:.1f}x is {'attractive' if pe<15 else 'fairly valued' if pe<25 else 'elevated'}.")
-    if fscore.get("alerts"): lines.append("Key risks: " + "; ".join(fscore["alerts"][:2]) + ".")
+    if roe: lines.append(f"ROE {roe:.1f}%，反映{'卓越' if roe>25 else '優於平均' if roe>15 else '低於基準'}的資本運用效率。")
+    if gm and nm: lines.append(f"毛利率 {gm:.1f}%、淨利率 {nm:.1f}%，中間 {gm-nm:.1f} 個百分點的差距由營運費用與稅負吸收。")
+    if yoy: lines.append(f"營收年增率{'成長' if yoy>0 else '衰退'} {abs(yoy):.1f}%。")
+    if pe: lines.append(f"本益比 {pe:.1f} 倍，估值{'偏低具吸引力' if pe<15 else '合理' if pe<25 else '偏高'}。")
+    if fscore.get("alerts"): lines.append("主要風險：" + "、".join(fscore["alerts"][:2]) + "。")
     return " ".join(lines)

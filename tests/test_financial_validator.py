@@ -133,7 +133,7 @@ def test_confidence_full_data():
     c = calc_confidence(data_completeness=1.0, data_freshness=1.0,
                         n_signals=5, min_signals=3)
     assert c["score"] >= 75
-    assert c["level"] == "High"
+    assert c["level"] == "高"
 
 def test_confidence_no_data():
     c = calc_confidence(data_completeness=0.0, data_freshness=0.0,
