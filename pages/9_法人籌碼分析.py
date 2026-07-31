@@ -135,4 +135,4 @@ st.markdown("""<div style="background:#EFF6FF;border:1px solid #BFDBFE;border-ra
     <b>▶ 下一步：</b>完成法人籌碼分析後，前往 <b>財報因子分析</b> 評估公司基本面品質。
 </div>""", unsafe_allow_html=True)
 
-st.caption("資料來源：FinMind API ｜ 僅供學術研究，不構成投資建議")
+st.caption("資料來源：FinMind API")

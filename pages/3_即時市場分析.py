@@ -141,4 +141,4 @@ fig.add_trace(go.Bar(x=hist["date"],y=hist["volume"],marker_color=vc,name="成�
 fig.update_layout(template="plotly_white",height=500,xaxis_rangeslider_visible=False,
     margin=dict(l=10,r=10,t=10,b=10))
 st.plotly_chart(fig, use_container_width=True)
-st.caption("資料來源：Yahoo Finance（延遲約15分鐘）｜ 僅供學術研究，不構成投資建議")
+st.caption("資料來源：Yahoo Finance（延遲約15分鐘）")

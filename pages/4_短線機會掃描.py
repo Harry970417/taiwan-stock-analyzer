@@ -79,9 +79,13 @@ if run_vol:
             text=vol_df["Change"], textposition="outside"))
         fig.update_layout(title="今日成交量排行",template="plotly_white",height=350,margin=dict(l=10,r=10,t=50,b=80))
         st.plotly_chart(fig, use_container_width=True)
-        st.dataframe(vol_df, use_container_width=True, hide_index=True)
+        display_vol_df = vol_df.rename(columns={
+            "Ticker": "代號", "Name": "名稱", "Change": "漲跌幅",
+            "Volume": "成交量", "Prev Volume": "前次成交量", "Bullish": "偏多訊號",
+        })
+        st.dataframe(display_vol_df, use_container_width=True, hide_index=True)
         from datetime import datetime
         csv2 = vol_df.to_csv(index=False, encoding="utf-8-sig").encode("utf-8-sig")
         st.download_button("📥 下載 CSV", csv2, f"成交量Top10_{datetime.now().strftime('%Y%m%d')}.csv", "text/csv")
 
-st.caption("資料來源：台灣證交所 + Yahoo Finance ｜ 僅供學術研究，不構成投資建議")
+st.caption("資料來源：台灣證交所 + Yahoo Finance")

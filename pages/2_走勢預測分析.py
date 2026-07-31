@@ -85,5 +85,3 @@ if show_rsi and "RSI" in df_recent.columns:
     with ind_cols[0]: st.plotly_chart(plot_rsi(df_recent), use_container_width=True)
 if show_macd and "DIF" in df_recent.columns:
     with ind_cols[1]: st.plotly_chart(plot_macd(df_recent), use_container_width=True)
-
-st.caption("僅供學術研究，不構成投資建議")

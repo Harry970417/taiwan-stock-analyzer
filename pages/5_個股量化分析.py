@@ -151,4 +151,4 @@ if show_fin:
             fig_rev.update_layout(title="月營收趨勢",template="plotly_white",height=280,margin=dict(l=10,r=10,t=50,b=10))
             st.plotly_chart(fig_rev,use_container_width=True)
 
-st.caption("資料來源：Yahoo Finance + FinMind API ｜ 僅供學術研究，不構成投資建議")
+st.caption("資料來源：Yahoo Finance + FinMind API")

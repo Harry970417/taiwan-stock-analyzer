@@ -123,4 +123,4 @@ with tab3:
             fig_cmp.update_layout(title="多股累積報酬率比較（%）",template="plotly_white",height=450,margin=dict(l=10,r=10,t=50,b=10))
             st.plotly_chart(fig_cmp, use_container_width=True)
 
-st.caption("資料來源：Yahoo Finance ｜ 僅供學術研究，不構成投資建議")
+st.caption("資料來源：Yahoo Finance")

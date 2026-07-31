@@ -314,7 +314,7 @@ if not run_button:
     st.markdown("""
     <div style="text-align:center;font-size:0.7rem;color:#94A3B8;
                 padding:1.75rem 0 0.5rem;border-top:1px solid #F1F5F9;margin-top:1rem;">
-        台灣股票量化研究平台 ｜ 資料：Yahoo Finance · TWSE · FinMind ｜ 僅供學術研究與作品集展示
+        台灣股票量化研究平台 ｜ 資料：Yahoo Finance · TWSE · FinMind
     </div>
     """, unsafe_allow_html=True)
     st.stop()
@@ -464,4 +464,4 @@ with e3:
                        summary.to_csv(index=False,encoding="utf-8-sig").encode("utf-8-sig"),
                        get_export_filename(ticker,"回測摘要"), "text/csv")
 
-st.markdown('<div style="text-align:center;font-size:0.72rem;color:#94A3B8;padding:1rem 0;">台灣股票智能分析平台 ｜ 資料來源：Yahoo Finance ｜ 僅供學術研究，不構成投資建議</div>', unsafe_allow_html=True)
+st.markdown('<div style="text-align:center;font-size:0.72rem;color:#94A3B8;padding:1rem 0;">台灣股票智能分析平台 ｜ 資料來源：Yahoo Finance</div>', unsafe_allow_html=True)

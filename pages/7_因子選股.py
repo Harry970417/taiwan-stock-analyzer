@@ -176,7 +176,7 @@ if mode == "🔍 選股篩選器":
         "📥 下載篩選結果 CSV", csv,
         f"因子選股_{datetime.now().strftime('%Y%m%d_%H%M')}.csv", "text/csv",
     )
-    st.caption("資料來源：Yahoo Finance（延遲約15分鐘）｜ 僅供學術研究，不構成投資建議")
+    st.caption("資料來源：Yahoo Finance（延遲約15分鐘）")
 
 
 # ============================================================================
@@ -505,8 +505,6 @@ else:
 > - ICIR = **{icir_val:.3f}**（門檻 |ICIR| > 0.5 表示訊號一致）
 > - t-stat = **{t_stat_val:.2f}**（|t| > 2 為顯著）
 > - 結論：<span style="color:{conclusion_color};font-weight:bold;">{conclusion_text}</span>
->
-> *僅供學術研究，不構成投資建議*
 """, unsafe_allow_html=True)
 
     # 報告資料結構（JSON 格式，可未來整合進 report_generator）

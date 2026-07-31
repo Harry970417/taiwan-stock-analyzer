@@ -47,10 +47,14 @@ if not result_df.empty:
     st.plotly_chart(fig, use_container_width=True)
 
     section_header("強勢股清單")
-    st.dataframe(result_df, use_container_width=True, hide_index=True)
+    display_df = result_df.rename(columns={
+        "ticker": "代號", "name": "名稱", "close": "收盤價",
+        "open": "開盤價", "change_pct": "漲跌幅(%)", "volume": "成交量",
+    })
+    st.dataframe(display_df, use_container_width=True, hide_index=True)
 
     from datetime import datetime
     csv = result_df.to_csv(index=False, encoding="utf-8-sig").encode("utf-8-sig")
     st.download_button("📥 下載 CSV", csv, f"強勢股_{datetime.now().strftime('%Y%m%d')}.csv", "text/csv")
 
-st.caption("資料來源：台灣證券交易所 ｜ 僅供學術研究，不構成投資建議")
+st.caption("資料來源：台灣證券交易所")

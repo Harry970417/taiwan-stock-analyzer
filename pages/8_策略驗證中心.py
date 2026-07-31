@@ -153,4 +153,3 @@ for strat_name, res in results.items():
             td["amount"] = td["amount"].map(lambda x: f"${x:,.0f}")
             st.dataframe(td, use_container_width=True, hide_index=True)
 
-st.caption("僅供學術研究，不構成投資建議")
