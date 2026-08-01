@@ -165,9 +165,9 @@ def calc_historical_var(returns: pd.Series, confidence: float = 0.95) -> dict:
     var_dollar = abs(var_pct) * 1_000_000  # 1M TWD reference portfolio
 
     interpretation = (
-        f"At {confidence*100:.0f}% confidence, the worst single-day loss does not exceed "
-        f"{abs(var_pct)*100:.2f}% (TWD {var_dollar:,.0f} on a 1M position) "
-        f"on any given trading day. Based on {n} historical observations."
+        f"在 {confidence*100:.0f}% 信心水準下，任一交易日的最大單日虧損預期不超過 "
+        f"{abs(var_pct)*100:.2f}%（以 100 萬元部位計約新台幣 {var_dollar:,.0f} 元）。"
+        f"以 {n} 筆歷史觀測值估算。"
     )
 
     return {
@@ -220,16 +220,16 @@ def calc_cvar(returns: pd.Series, confidence: float = 0.95) -> dict:
     n_tail = len(tail_returns)
 
     if n_tail == 0:
-        return {**empty, "interpretation": "No returns below VaR threshold."}
+        return {**empty, "interpretation": "無低於 VaR 門檻的報酬資料。"}
 
     cvar_pct = float(tail_returns.mean())
     cvar_dollar = abs(cvar_pct) * 1_000_000
 
     interpretation = (
-        f"In the worst {(1-confidence)*100:.0f}% of trading days, the average loss is "
-        f"{abs(cvar_pct)*100:.2f}% (TWD {cvar_dollar:,.0f} on 1M position). "
-        f"CVaR is based on {n_tail} tail observations. "
-        f"CVaR/VaR ratio = {abs(cvar_pct)/abs(var_threshold):.2f} (>1.5 indicates fat tail risk)."
+        f"在最差的 {(1-confidence)*100:.0f}% 交易日中，平均虧損為 "
+        f"{abs(cvar_pct)*100:.2f}%（以 100 萬元部位計約新台幣 {cvar_dollar:,.0f} 元）。"
+        f"CVaR 以 {n_tail} 筆尾端觀測值估算。"
+        f"CVaR/VaR 比值 = {abs(cvar_pct)/abs(var_threshold):.2f}（>1.5 代表存在厚尾風險）。"
     )
 
     cvar_var_ratio = abs(cvar_pct) / abs(var_threshold) if var_threshold != 0 else None
@@ -332,21 +332,21 @@ def calc_beta_alpha(
 
     # Interpretation
     if abs(b) < 0.5:
-        beta_desc = "Low-beta (defensive) — moves less than the market."
+        beta_desc = "低 Beta（防禦型）——波動小於大盤。"
     elif abs(b) < 1.0:
-        beta_desc = "Below-market-beta — somewhat defensive."
+        beta_desc = "低於大盤 Beta——偏防禦型。"
     elif abs(b) < 1.5:
-        beta_desc = "Above-market-beta — somewhat aggressive."
+        beta_desc = "高於大盤 Beta——偏積極型。"
     else:
-        beta_desc = "High-beta (aggressive) — amplifies market movements."
+        beta_desc = "高 Beta（積極型）——放大大盤波動。"
 
-    alpha_desc = "positive excess return above CAPM expectation" if alpha_ann > 0 else "negative alpha (underperforms CAPM expectation)"
+    alpha_desc = "高於 CAPM 預期的正超額報酬" if alpha_ann > 0 else "負 Alpha（低於 CAPM 預期表現）"
 
     interpretation = (
-        f"Beta={b:.3f} ({beta_desc}). "
-        f"Jensen's Alpha={alpha_ann*100:.2f}% annualized ({alpha_desc}). "
-        f"R²={r_sq:.3f}: {r_sq*100:.1f}% of variance explained by market. "
-        f"Systematic risk = {systematic_pct:.1f}%, idiosyncratic = {idiosyncratic_pct:.1f}%."
+        f"Beta={b:.3f}（{beta_desc}）。"
+        f"Jensen's Alpha={alpha_ann*100:.2f}%（年化，{alpha_desc}）。"
+        f"R²={r_sq:.3f}：{r_sq*100:.1f}% 的變異可由大盤解釋。"
+        f"系統性風險 = {systematic_pct:.1f}%，非系統性風險 = {idiosyncratic_pct:.1f}%。"
     )
 
     return {
@@ -600,50 +600,50 @@ def stress_test(
     """
     scenarios_meta = [
         {
-            "name": "COVID Crash",
+            "name": "COVID 崩盤",
             "start": "2020-02-20",
             "end": "2020-03-23",
-            "period": "Feb 20 – Mar 23, 2020",
+            "period": "2020/02/20 – 2020/03/23",
             "historical": True,
             "market_return": -0.290,   # Taiwan market reference return
-            "description": "Global pandemic sell-off; fastest bear market in history.",
+            "description": "全球疫情恐慌性拋售；史上最快速的熊市。",
         },
         {
-            "name": "2022 Fed Rate Hike Cycle",
+            "name": "2022 聯準會升息循環",
             "start": "2022-01-01",
             "end": "2022-12-31",
-            "period": "Full year 2022",
+            "period": "2022 全年",
             "historical": True,
             "market_return": -0.220,
-            "description": "Aggressive Fed tightening; global equity re-rating.",
+            "description": "聯準會積極升息；全球股市重新評價。",
         },
         {
-            "name": "2008 Global Financial Crisis",
+            "name": "2008 全球金融危機",
             "start": "2008-09-01",
             "end": "2009-03-09",
-            "period": "Sep 2008 – Mar 2009",
+            "period": "2008/09 – 2009/03",
             "historical": True,
             "market_return": -0.520,
-            "description": "Lehman collapse; TAIEX fell ~52% peak-to-trough.",
+            "description": "雷曼兄弟倒閉；台股高點到低點約下跌 52%。",
         },
         {
-            "name": "Taiwan Strait Tension (Hypothetical)",
+            "name": "台海緊張情勢（假設情境）",
             "start": None, "end": None,
-            "period": "Hypothetical: -15% shock over 5 days",
+            "period": "假設：5 日內下跌 15%",
             "historical": False,
             "market_shock": -0.15,
             "shock_days": 5,
-            "description": "Acute geopolitical risk shock specific to Taiwan market.",
+            "description": "台股特有的急性地緣政治風險衝擊。",
         },
         {
-            "name": "Tech Sector Selloff (Hypothetical)",
+            "name": "科技股拋售（假設情境）",
             "start": None, "end": None,
-            "period": "Hypothetical: NASDAQ-style -40% over 6 months",
+            "period": "假設：仿那斯達克式 6 個月內下跌 40%",
             "historical": False,
             "market_shock": -0.40,
             "shock_days": 126,
             "beta_sensitivity": 0.8,  # Taiwan tech typically ~0.8× NASDAQ sensitivity
-            "description": "Severe technology sector de-rating; AI/semiconductor correction.",
+            "description": "科技股嚴重重新評價；AI／半導體修正。",
         },
     ]
 

@@ -49,7 +49,7 @@ def check_ohlc_consistency(df: pd.DataFrame) -> dict:
         if col not in df.columns:
             return {"total_bars": len(df), "error_bars": 0, "error_rate_pct": 0.0,
                     "errors": [], "passed": True,
-                    "note": f"Missing column '{col}', check skipped"}
+                    "note": f"缺少欄位「{col}」，跳過此項檢查"}
 
     errors = []
     df = df.reset_index(drop=True)
@@ -227,7 +227,7 @@ def check_stationarity(series: pd.Series) -> dict:
     empty = {
         "autocorr_lag1": None, "autocorr_lag5": None,
         "is_price_series": None, "hurst_exponent": None,
-        "hurst_interpretation": "Insufficient data",
+        "hurst_interpretation": "資料不足",
         "is_likely_stationary": None,
     }
 
@@ -338,7 +338,7 @@ def calc_jarque_bera(returns: pd.Series) -> dict:
     empty = {
         "n": 0, "skewness": 0.0, "excess_kurtosis": 0.0,
         "jb_statistic": 0.0, "is_normal": True,
-        "interpretation": "Insufficient data",
+        "interpretation": "資料不足",
     }
 
     if returns is None or len(returns.dropna()) < 8:
@@ -467,10 +467,10 @@ def assess_data_quality(df: pd.DataFrame, ticker: str = "") -> dict:
         length_note = "Adequate (120–251 bars)"
     elif n_bars >= 60:
         length_pts = 4.0
-        length_note = "Marginal (60–119 bars)"
+        length_note = "邊緣水準（60–119 根K棒）"
     else:
         length_pts = 0.0
-        length_note = f"Insufficient (<60 bars). Minimum 120 required for research validity."
+        length_note = f"不足（少於 60 根K棒）。研究有效性至少需要 120 根。"
     score += length_pts
     sub_scores["data_length"] = round(length_pts, 1)
     sub_checks["length"] = {"n_bars": n_bars, "note": length_note}
@@ -559,7 +559,7 @@ def assess_data_quality(df: pd.DataFrame, ticker: str = "") -> dict:
             "notes": return_notes,
         }
     else:
-        return_notes.append("Insufficient data for return property checks.")
+        return_notes.append("報酬率特性檢查資料不足。")
         sub_checks["return_properties"] = {"notes": return_notes}
 
     score += returns_pts
@@ -569,34 +569,34 @@ def assess_data_quality(df: pd.DataFrame, ticker: str = "") -> dict:
     total_score = round(score, 1)
     if total_score >= 90:
         grade = "A+"
-        grade_desc = "Excellent — publication-grade data quality."
+        grade_desc = "優異 — 資料品質達可發表研究水準。"
     elif total_score >= 80:
         grade = "A"
-        grade_desc = "Good — suitable for rigorous quantitative research."
+        grade_desc = "良好 — 適合嚴謹的量化研究使用。"
     elif total_score >= 70:
         grade = "B"
-        grade_desc = "Acceptable — back-testing and factor studies are viable; document known issues."
+        grade_desc = "可接受 — 可進行回測與因子研究，但須註明已知限制。"
     elif total_score >= 55:
         grade = "C"
-        grade_desc = "Marginal — results should be interpreted cautiously; significant caveats required."
+        grade_desc = "邊緣水準 — 結果應謹慎解讀，須附上顯著但書。"
     else:
         grade = "D"
-        grade_desc = "Poor — data quality is a material concern; findings may be unreliable."
+        grade_desc = "不佳 — 資料品質為重大疑慮，研究發現可能不可靠。"
 
-    # ── Summary interpretation text ───────────────────────────────────────
+    # ── 摘要解讀文字 ────────────────────────────────────────────────────────
     interpretation_parts = [
-        f"Data quality score: {total_score}/100 (Grade {grade}). {grade_desc}",
-        f"Data span: {n_bars} bars "
-        f"({sub_checks['freshness'].get('latest_date', 'N/A')} most recent).",
+        f"資料品質分數：{total_score}/100（等級 {grade}）。{grade_desc}",
+        f"資料涵蓋範圍：{n_bars} 根K棒"
+        f"（最新至 {sub_checks['freshness'].get('latest_date', 'N/A')}）。",
     ]
     if err_bars > 0:
         interpretation_parts.append(
-            f"Found {err_bars} OHLC-inconsistent bar(s) — verify data source."
+            f"發現 {err_bars} 根 OHLC 不一致的K棒——建議確認資料來源。"
         )
     if outlier_rate > 3.0:
         interpretation_parts.append(
-            f"Outlier rate {outlier_rate:.1f}% exceeds normal threshold. "
-            "Review ex-dividend/corporate action adjustments."
+            f"異常值比例 {outlier_rate:.1f}% 超過正常門檻，"
+            "建議檢查除權息調整是否正確。"
         )
 
     return {

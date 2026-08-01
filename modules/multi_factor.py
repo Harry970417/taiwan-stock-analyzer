@@ -265,23 +265,23 @@ def calc_factor_ic(
 
     significant = abs(t_stat) > 2.0
 
-    # ── Academic interpretation ───────────────────────────────────────────
+    # ── 學術解讀 ───────────────────────────────────────────────────────────
     abs_ic = abs(ic)
     if abs_ic > 0.1:
-        strength = "strong"
+        strength = "強"
     elif abs_ic > 0.05:
-        strength = "moderate"
+        strength = "中等"
     elif abs_ic > 0.03:
-        strength = "weak but informative (|IC|>0.03)"
+        strength = "偏弱但仍具參考性（|IC|>0.03）"
     else:
-        strength = "negligible (<0.03 threshold)"
+        strength = "可忽略（<0.03 門檻）"
 
-    direction = "positive predictive relationship" if ic > 0 else "negative predictive relationship"
-    sig_str = "statistically significant" if significant else "not statistically significant"
+    direction = "正向預測關係" if ic > 0 else "負向預測關係"
+    sig_str = "統計顯著" if significant else "未達統計顯著"
 
     interpretation = (
-        f"IC={ic:.4f} ({strength}), ICIR={icir:.3f}, t={t_stat:.2f} ({sig_str}). "
-        f"This factor has a {direction} with {lag}-day forward returns."
+        f"IC={ic:.4f}（{strength}），ICIR={icir:.3f}，t={t_stat:.2f}（{sig_str}）。"
+        f"此因子與 {lag} 日後續報酬呈{direction}。"
     )
 
     return {
@@ -588,11 +588,11 @@ def walk_forward_backtest(
     # Interpretation
     if degradation is not None:
         if degradation > -0.3:
-            deg_note = "Modest degradation — strategy generalizes reasonably well."
+            deg_note = "衰退幅度輕微——策略泛化能力尚可。"
         elif degradation > -0.8:
-            deg_note = "Moderate degradation — some overfitting likely; treat OOS results as primary."
+            deg_note = "衰退幅度中等——可能存在過度配適，應以樣本外結果為主要參考。"
         else:
-            deg_note = "Severe degradation — strong overfitting signal; IS results not predictive of live performance."
+            deg_note = "衰退幅度嚴重——過度配適訊號明顯，樣本內結果不具實際績效預測力。"
     else:
         deg_note = "Degradation could not be computed."
 
