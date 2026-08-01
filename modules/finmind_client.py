@@ -39,6 +39,28 @@ INSTITUTION_KEY = {
     "dealer":   "Dealer",
 }
 
+# ── 財報公告延遲（FSC 揭露期限，非固定 45 天）──────────────────────────────
+# 第一~三季財報：季度終了後 45 日內公告（證交法 §36）。
+# 第四季／年度財報：需經會計師查核簽證，期限放寬至年度終了後 3 個月（90 日）。
+# 誤用單一 45 日延遲會讓 Q4/年度資料提前 ~45 天「被看見」（look-ahead bias）。
+_Q1Q3_DISCLOSURE_LAG_DAYS = 45
+_Q4_ANNUAL_DISCLOSURE_LAG_DAYS = 90
+
+
+def _apply_disclosure_lag(period_end_index: pd.DatetimeIndex) -> pd.DatetimeIndex:
+    """
+    Shift each period-end date to its earliest legally-known-public date.
+
+    Q4/annual (period month == 12) gets the longer 90-day audited-report
+    deadline; Q1-Q3 get the 45-day deadline. See constants above.
+    """
+    lag_days = np.where(
+        period_end_index.month == 12,
+        _Q4_ANNUAL_DISCLOSURE_LAG_DAYS,
+        _Q1Q3_DISCLOSURE_LAG_DAYS,
+    )
+    return period_end_index + pd.to_timedelta(lag_days, unit="D")
+
 
 # ═════════════════════════════════════════════════════════════════════════════
 # FinMindClient
@@ -287,8 +309,9 @@ def get_roe(
         return pd.Series(dtype=float)
 
     roe = (combined["ni"] / combined["eq"] * 100).replace([np.inf, -np.inf], np.nan)
-    roe.index = roe.index + pd.Timedelta(days=45)
-    return roe.dropna()
+    roe = roe.dropna()
+    roe.index = _apply_disclosure_lag(roe.index)
+    return roe
 
 
 def get_roa(
@@ -333,8 +356,9 @@ def get_roa(
         return pd.Series(dtype=float)
 
     roa = (combined["ni"] / combined["ta"] * 100).replace([np.inf, -np.inf], np.nan)
-    roa.index = roa.index + pd.Timedelta(days=45)
-    return roa.dropna()
+    roa = roa.dropna()
+    roa.index = _apply_disclosure_lag(roa.index)
+    return roa
 
 
 def get_eps(
@@ -354,7 +378,7 @@ def get_eps(
     )
     if eps.empty:
         return pd.Series(dtype=float)
-    eps.index = eps.index + pd.Timedelta(days=45)
+    eps.index = _apply_disclosure_lag(eps.index)
     return eps
 
 
@@ -379,7 +403,7 @@ def get_book_value(
     )
     if eq.empty:
         return pd.Series(dtype=float)
-    eq.index = eq.index + pd.Timedelta(days=45)
+    eq.index = _apply_disclosure_lag(eq.index)
     return eq
 
 

@@ -64,11 +64,52 @@ def get_all_stock_info(token: str = "") -> pd.DataFrame:
 # ─────────────────────────────────────────────────────────────────────────────
 
 def _infer_listing_date_col(df: pd.DataFrame) -> Optional[str]:
-    """Return the name of the listing-date column, or None if not found."""
-    for col in ["listed_date", "IPOdate", "date"]:
+    """
+    Return the name of a GENUINE listing/IPO-date column, or None if absent.
+
+    IMPORTANT: FinMind's TaiwanStockInfo 'date' field is NOT a listing date.
+    Empirically verified (2026-08, see docs/TW_US_BACKTEST_BIAS_AUDIT.md):
+    TSMC (2330, listed 1994) and most actively-tracked TWSE names report
+    'date' == today's date (a metadata last-refresh timestamp), while only
+    rarely-touched records show older dates. Treating 'date' as a listing
+    date previously made build_pit_universe() silently return an empty or
+    near-empty universe for historical as-of-dates (a BLOCKER-severity bug,
+    since it defeats the entire purpose of this module). 'date' is
+    deliberately excluded from this fallback chain. Use
+    infer_listing_dates_from_price_history() for a working PIT proxy when
+    no genuine column is present.
+    """
+    for col in ["listed_date", "IPOdate", "listing_date"]:
         if col in df.columns:
             return col
     return None
+
+
+def infer_listing_dates_from_price_history(universe_data: dict) -> dict:
+    """
+    Empirical PIT proxy: each ticker's first observed OHLCV date.
+
+    Standard practitioner fallback when true listing-date metadata isn't
+    reliably available (see _infer_listing_date_col). Feed the result into
+    apply_pit_filter_to_panel() to zero out factor/return panel cells
+    before a stock's actual (empirically observed) listing date.
+
+    Parameters
+    ----------
+    universe_data : {ticker: pd.DataFrame} with a 'date' column (OHLCV)
+
+    Returns
+    -------
+    dict {ticker: pd.Timestamp}  first available trading date per ticker
+    """
+    listing_dates = {}
+    for ticker, df in universe_data.items():
+        if df is None or df.empty or "date" not in df.columns:
+            continue
+        dates = pd.to_datetime(df["date"], errors="coerce").dropna()
+        if not dates.empty:
+            listing_dates[ticker] = dates.min()
+    return listing_dates
 
 
 def _infer_market_col(df: pd.DataFrame) -> Optional[str]:
@@ -115,12 +156,28 @@ def build_pit_universe(
         allowed = twse_labels | (otc_labels if include_otc else set())
         df = df[df[mkt_col].astype(str).str.strip().isin(allowed)]
 
-    # PIT date filter
+    # PIT date filter — only applied when a GENUINE listing-date column
+    # exists. FinMind's TaiwanStockInfo does not reliably provide one (see
+    # _infer_listing_date_col docstring); when absent, this function
+    # returns a market-type-filtered CANDIDATE list only — NOT a true
+    # point-in-time universe. Callers must additionally call
+    # infer_listing_dates_from_price_history() + apply_pit_filter_to_panel()
+    # once OHLCV data has been downloaded, before treating results as a
+    # formal, survivorship-bias-free backtest.
     date_col = _infer_listing_date_col(df)
     if date_col is not None:
         df[date_col] = pd.to_datetime(df[date_col], errors="coerce")
         cutoff = pd.Timestamp(as_of_date)
         df = df[df[date_col].notna() & (df[date_col] <= cutoff)]
+    else:
+        print(
+            "[universe_pit] WARNING: no genuine listing-date column in "
+            "TaiwanStockInfo -- returning market-type-filtered candidates "
+            "WITHOUT PIT date filtering. Call "
+            "infer_listing_dates_from_price_history() + "
+            "apply_pit_filter_to_panel() on the downloaded OHLCV panel "
+            "before using this as a formal backtest universe."
+        )
 
     # Extract stock IDs
     id_col = "stock_id" if "stock_id" in df.columns else df.columns[0]
