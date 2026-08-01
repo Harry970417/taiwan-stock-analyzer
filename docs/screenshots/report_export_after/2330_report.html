@@ -1,0 +1,477 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>2330 — 量化研究報告</title>
+  
+<style>
+  /* ─── Reset & Base ─────────────────────────────────────────────────── */
+  *, *::before, *::after { box-sizing: border-box; }
+
+  body {
+    font-family: "Times New Roman", Times, serif;
+    font-size: 11pt;
+    line-height: 1.55;
+    color: #1a1a1a;
+    background: #ffffff;
+    margin: 0;
+    padding: 0;
+  }
+
+  /* ─── Page layout (A4) ──────────────────────────────────────────────── */
+  .page {
+    max-width: 210mm;
+    margin: 0 auto;
+    padding: 20mm 25mm;
+  }
+
+  /* ─── Cover page ────────────────────────────────────────────────────── */
+  .cover {
+    text-align: center;
+    padding: 40mm 20mm 20mm 20mm;
+    border-bottom: 2px solid #1a3a5c;
+    margin-bottom: 20px;
+    page-break-after: always;
+  }
+  .cover h1 {
+    font-size: 26pt;
+    color: #1a3a5c;
+    margin: 0 0 8px 0;
+    letter-spacing: 0.05em;
+  }
+  .cover .subtitle {
+    font-size: 14pt;
+    color: #4a4a4a;
+    margin-bottom: 10px;
+  }
+  .cover .date {
+    font-size: 10pt;
+    color: #6a6a6a;
+  }
+  .cover .platform {
+    font-size: 9pt;
+    color: #8a8a8a;
+    margin-top: 30px;
+  }
+  .cover .disclaimer-box {
+    border: 1px solid #cc9900;
+    background: #fffbe6;
+    padding: 10px 14px;
+    margin-top: 24px;
+    font-size: 8.5pt;
+    text-align: left;
+    color: #5a4a00;
+    border-radius: 3px;
+  }
+
+  /* ─── Section headings ───────────────────────────────────────────────── */
+  h2 {
+    font-size: 14pt;
+    color: #1a3a5c;
+    border-bottom: 1.5px solid #1a3a5c;
+    padding-bottom: 4px;
+    margin-top: 24px;
+    margin-bottom: 10px;
+    page-break-after: avoid;
+  }
+  h3 {
+    font-size: 11.5pt;
+    color: #2c4a6c;
+    margin-top: 16px;
+    margin-bottom: 6px;
+    page-break-after: avoid;
+  }
+  h4 {
+    font-size: 10.5pt;
+    color: #444;
+    margin-top: 12px;
+    margin-bottom: 4px;
+  }
+
+  /* ─── Section wrapper ────────────────────────────────────────────────── */
+  .section {
+    margin-bottom: 28px;
+  }
+
+  /* ─── Executive summary ──────────────────────────────────────────────── */
+  .exec-summary {
+    background: #f4f7fc;
+    border-left: 4px solid #1a3a5c;
+    padding: 12px 16px;
+    margin-bottom: 18px;
+    border-radius: 0 3px 3px 0;
+  }
+  .exec-summary ul {
+    margin: 0;
+    padding-left: 20px;
+  }
+  .exec-summary li {
+    margin-bottom: 6px;
+    font-size: 10.5pt;
+  }
+
+  /* ─── Tables ─────────────────────────────────────────────────────────── */
+  table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 9.5pt;
+    margin: 10px 0 14px 0;
+    page-break-inside: avoid;
+  }
+  thead tr {
+    background: #1a3a5c;
+    color: #ffffff;
+  }
+  thead th {
+    padding: 6px 10px;
+    text-align: left;
+    font-weight: bold;
+    font-size: 9pt;
+    letter-spacing: 0.03em;
+  }
+  tbody tr:nth-child(even) {
+    background: #f0f4f8;
+  }
+  tbody tr:hover {
+    background: #e8eef5;
+  }
+  tbody td {
+    padding: 5px 10px;
+    border-bottom: 1px solid #dce3ec;
+    vertical-align: top;
+  }
+  .col-num {
+    text-align: right;
+    font-variant-numeric: tabular-nums;
+    font-family: "Courier New", monospace;
+  }
+  .col-sig {
+    color: #006600;
+    font-weight: bold;
+  }
+  .col-warn {
+    color: #cc3300;
+  }
+  .col-neutral {
+    color: #444;
+  }
+
+  /* ─── Grade / score badges ───────────────────────────────────────────── */
+  .grade-badge {
+    display: inline-block;
+    padding: 2px 10px;
+    border-radius: 12px;
+    font-weight: bold;
+    font-size: 11pt;
+  }
+  .grade-a-plus { background: #c8f0c8; color: #004400; }
+  .grade-a      { background: #d8f0d0; color: #005500; }
+  .grade-b      { background: #fff0c0; color: #664400; }
+  .grade-c      { background: #ffe0c0; color: #883300; }
+  .grade-d      { background: #ffc0c0; color: #880000; }
+
+  /* ─── Chart figure ───────────────────────────────────────────────────── */
+  .chart-container {
+    margin: 12px 0;
+    text-align: center;
+    page-break-inside: avoid;
+  }
+  .chart-container img {
+    max-width: 100%;
+    height: auto;
+    border: 1px solid #dce3ec;
+    border-radius: 2px;
+  }
+  .chart-caption {
+    font-size: 8.5pt;
+    color: #666;
+    margin-top: 4px;
+    font-style: italic;
+  }
+
+  /* ─── Info boxes ─────────────────────────────────────────────────────── */
+  .info-box {
+    background: #f8f9fa;
+    border: 1px solid #d0d7e0;
+    padding: 10px 14px;
+    margin: 10px 0;
+    border-radius: 3px;
+    font-size: 9.5pt;
+  }
+  .warn-box {
+    background: #fff8e6;
+    border: 1px solid #e0c060;
+    padding: 10px 14px;
+    margin: 10px 0;
+    border-radius: 3px;
+    font-size: 9.5pt;
+  }
+  .error-box {
+    background: #fff0f0;
+    border: 1px solid #e08080;
+    padding: 10px 14px;
+    margin: 10px 0;
+    border-radius: 3px;
+    font-size: 9.5pt;
+    color: #880000;
+  }
+
+  /* ─── Methodology / footnote text ───────────────────────────────────── */
+  .methodology {
+    font-size: 8.5pt;
+    color: #555;
+    border-top: 1px solid #dce3ec;
+    padding-top: 8px;
+    margin-top: 16px;
+  }
+
+  /* ─── Print settings ─────────────────────────────────────────────────── */
+  @media print {
+    body { font-size: 10pt; }
+    .page { padding: 15mm 20mm; }
+    .no-print { display: none; }
+    h2 { page-break-after: avoid; }
+    table { page-break-inside: avoid; }
+    .cover { page-break-after: always; }
+  }
+</style>
+
+</head>
+<body>
+<div class="page">
+
+  
+<div class="cover">
+  <div style="font-size:9pt; color:#8a8a8a; margin-bottom:8px; letter-spacing:0.1em; text-transform:uppercase;">
+    台灣股市研究平台
+  </div>
+  <h1>2330 — 量化研究報告</h1>
+  <div class="subtitle">多因子分析與風險評估</div>
+  <div class="date">報告日期：2026-08-01 &nbsp;|&nbsp; 台灣證券交易所</div>
+
+  <div class="disclaimer-box">
+    <strong>⚠ 研究免責聲明：</strong>本報告由自動化量化研究系統產生，僅供學術與研究用途，
+    不構成任何投資建議、買賣證券之邀約或推薦。過去績效不代表未來表現，
+    所有量化模型皆存在模型風險與資料限制，作者對依本文件內容所做之任何財務決策不負任何責任。
+    投資台股涉及本金風險，實際投資決策前請諮詢合格財務顧問。
+  </div>
+
+  <div class="platform">
+    產製單位：Taiwan Stock Analyzer 研究平台（研究生版）
+    &nbsp;|&nbsp; Python 3.11 &nbsp;|&nbsp; 資料來源：yfinance / FinMind / TWSE
+  </div>
+</div>
+
+
+  <div class="section">
+    <h2>摘要</h2>
+    
+<div class="exec-summary">
+  <ul><li><strong>資料品質：</strong>2330 資料以 486 根 OHLCV K棒計算，品質分數為 95.0/100（等級 A+）。資料品質符合研究最低標準。</li><li><strong>策略回測：</strong>樣本內 Sharpe = 0.000，樣本外 Sharpe = 0.000（衰退幅度 = +0.000）。策略類推能力良好。</li><li><strong>總結：</strong>整體評估：資料品質尚可。策略在樣本外期間的表現為主要可信度指標，樣本內指標僅供探索性參考。</li></ul>
+</div>
+
+  </div>
+
+  
+<div class="section">
+  <h2>一、資料品質評估</h2>
+  
+    
+    <div style="margin: 10px 0 14px 0;">
+      <div style="font-size:10pt; margin-bottom:4px;">
+        總分：<strong>95.0/100</strong> &nbsp; <span class="grade-badge grade-a-plus">A+</span>
+      </div>
+      <div style="background:#e0e0e0; border-radius:3px; height:12px; width:100%;">
+        <div style="background:#2e7d32; width:95.0%; height:100%;
+                    border-radius:3px; transition:width 0.3s;"></div>
+      </div>
+    </div>
+    
+    <p style="font-size:9.5pt; color:#444;">資料品質分數：95.0/100（等級 A+）。優異 — 資料品質達可發表研究水準。 資料涵蓋範圍：486 根K棒（最新至 2026-07-31）。</p>
+    <p style="font-size:9pt;">OHLCV 資料總筆數：<strong>486</strong></p>
+
+    <h3>細項得分</h3>
+    <table><thead><tr><th>項目</th><th>滿分</th><th>得分</th></tr></thead><tbody><tr><td>OHLC 一致性</td><td>20</td><td><span class="col-sig"><strong>20.0</strong></span></td></tr><tr><td>缺失資料</td><td>20</td><td><span class="col-sig"><strong>20.0</strong></span></td></tr><tr><td>資料長度（≥252 根K棒）</td><td>10</td><td><span class="col-sig"><strong>10.0</strong></span></td></tr><tr><td>離群值比率</td><td>15</td><td><span class="col-neutral"><strong>10.0</strong></span></td></tr><tr><td>資料新鮮度</td><td>15</td><td><span class="col-sig"><strong>15.0</strong></span></td></tr><tr><td>報酬率分布特性</td><td>20</td><td><span class="col-sig"><strong>20.0</strong></span></td></tr></tbody></table>
+    
+
+    <h3>資料新鮮度</h3>
+    <p style="font-size:9.5pt;">最新資料日期：<strong>2026-07-31</strong> （距今 1 個日曆天）。Current (within 1 week)</p>
+
+    <h3>報酬率分布特性</h3>
+    <p style="font-size:9pt; color:#555;">
+      超額峰態（Excess Kurtosis）：<strong>3.228</strong>
+      &nbsp;|&nbsp;
+      一階自我相關（Lag-1 Autocorrelation）：<strong>-0.0545</strong>
+      &nbsp;|&nbsp;
+      JB 統計量：<strong>211.24</strong>
+    </p>
+    
+    
+</div>
+
+  
+<div class="section">
+  <h2>二、多因子分析</h2>
+  
+    <table><thead><tr><th>因子</th><th>平均 IC</th><th>ICIR</th><th>t 統計量</th><th>p 值</th><th>是否顯著*</th><th>說明</th></tr></thead><tbody><tr><td>動量因子（20日）</td><td>-0.0008</td><td>-0.777</td><td>-16.76</td><td>0.000</td><td><span class="col-sig">✓ 是</span></td><td>IC=-0.0008（可忽略（<0.03 門檻）），ICIR=-0.777，t=-16.76（統計顯著）。此因子與 1 日後續報酬呈負向預測關係。...</td></tr><tr><td>趨勢因子（相對 MA20）</td><td>-0.0307</td><td>-0.958</td><td>-20.67</td><td>0.000</td><td><span class="col-sig">✓ 是</span></td><td>IC=-0.0307（偏弱但仍具參考性（|IC|>0.03）），ICIR=-0.958，t=-20.67（統計顯著）。此因子與 1 日後續報酬呈負向預測關係。...</td></tr><tr><td>RSI 因子</td><td>-0.0437</td><td>-1.101</td><td>-23.90</td><td>0.000</td><td><span class="col-sig">✓ 是</span></td><td>IC=-0.0437（偏弱但仍具參考性（|IC|>0.03）），ICIR=-1.101，t=-23.90（統計顯著）。此因子與 1 日後續報酬呈負向預測關係。...</td></tr><tr><td>成交量激增因子</td><td>0.1289</td><td>1.144</td><td>24.95</td><td>0.000</td><td><span class="col-sig">✓ 是</span></td><td>IC=0.1289（強），ICIR=1.144，t=24.95（統計顯著）。此因子與 1 日後續報酬呈正向預測關係。...</td></tr><tr><td>MACD 標準化因子</td><td>-0.0095</td><td>-0.457</td><td>-9.68</td><td>0.000</td><td><span class="col-sig">✓ 是</span></td><td>IC=-0.0095（可忽略（<0.03 門檻）），ICIR=-0.457，t=-9.68（統計顯著）。此因子與 1 日後續報酬呈負向預測關係。...</td></tr></tbody></table>
+
+    <div class="info-box">
+      <strong>摘要：</strong> &nbsp;
+      最佳因子：<strong>volume_factor</strong> &nbsp;|&nbsp;
+      平均 |IC|：<strong>0.0427</strong> &nbsp;|&nbsp;
+      顯著因子（5 個）：<strong>momentum, trend, rsi_factor, volume_factor, macd_factor</strong>
+    </div>
+    
+    <div class="methodology">
+      <strong>方法說明：</strong>IC 為因子值[t]與次日前瞻報酬率[t+1]之 Spearman 等級相關係數，
+      以完整歷史樣本計算。ICIR = 平均 IC ÷ 60日滾動 IC 標準差。
+      依慣例 |IC| &gt; 0.03 視為具資訊價值的因子（Grinold &amp; Kahn）。
+      此處為單一個股的時間序列 IC，並非橫斷面 IC——結果僅反映該股票本身的因子與報酬動態，
+      不宜與多股票樣本的橫斷面 IC 直接比較。
+      ＊顯著性判定：|t 統計量| &gt; 2.0（約 5% 顯著水準）。
+    </div>
+    
+    
+</div>
+
+  
+<div class="section">
+  <h2>三、策略回測（Walk-Forward）</h2>
+  
+    <table><thead><tr><th>指標</th><th>樣本內 In-Sample（70%）</th><th>樣本外 Out-of-Sample（30%）</th></tr></thead><tbody><tr><td>總報酬率 (%)</td><td>0.00</td><td>0.00</td></tr><tr><td>Sharpe Ratio</td><td>0.000</td><td>0.000</td></tr><tr><td>最大回落 (%)</td><td>0.00</td><td>0.00</td></tr><tr><td>勝率 (%)</td><td>0.00</td><td>0.00</td></tr><tr><td>總交易次數</td><td>0</td><td>0</td></tr><tr><td>買進持有報酬率 (%)</td><td>56.90</td><td>66.51</td></tr><tr><td>資料期間</td><td>2024-07-31 to 2025-12-19</td><td>2025-12-22 to 2026-07-31</td></tr><tr><td>K棒數</td><td>340</td><td>146</td></tr></tbody></table>
+
+    <div class="info-box">
+      Sharpe Ratio 衰退幅度（OOS − IS）：<span style="color:#2e7d32; font-weight:bold;">+0.000</span> &nbsp;—&nbsp; 衰退幅度輕微——策略泛化能力尚可。
+    </div>
+    
+    <div class="methodology">
+      <strong>Walk-forward 方法說明：</strong>資料依時間先後切分為樣本內（IS）與樣本外（OOS）兩段。
+      策略概念上以 IS 資料校準，OOS 結果代表對實盤表現的首次、未經調整的評估。
+      Sharpe 衰退幅度 = OOS Sharpe − IS Sharpe，
+      負值為普遍現象；嚴重衰退（&lt; −0.5）則意味過度配適（overfitting）。
+      手續費：單邊 0.1425%；證券交易稅：賣出時 0.3%；一張為 1,000 股。
+      訊號於次日開盤價執行，以避免前視偏誤（look-ahead bias）。
+    </div>
+    
+    
+</div>
+
+  
+<div class="section">
+  <h2>四、風險分析</h2>
+  
+    <h3>核心風險調整後績效</h3>
+    <table><thead><tr><th>指標</th><th>數值</th></tr></thead><tbody><tr><td>年化報酬率</td><td>76.94%</td></tr><tr><td>年化波動率</td><td>34.80%</td></tr><tr><td>Sharpe Ratio（無風險利率=1.5%）</td><td>2.1679</td></tr><tr><td>Sortino Ratio</td><td>3.4358</td></tr><tr><td>Calmar Ratio</td><td>2.5215</td></tr><tr><td>最大回落</td><td>-30.52%</td></tr><tr><td>勝率（正報酬日佔比）</td><td>49.4%</td></tr><tr><td>偏態係數 (Skewness)</td><td>0.0876</td></tr><tr><td>超額峰態 (Excess Kurtosis)</td><td>3.2411</td></tr></tbody></table>
+
+    <h3>尾端風險指標（假設100萬元參考部位）</h3>
+    <table><thead><tr><th>尾端風險指標</th><th>佔部位比例</th><th>金額（假設本金100萬元）</th></tr></thead><tbody><tr><td>歷史模擬法 VaR (95%)</td><td>2.764%</td><td>TWD 27,642</td></tr><tr><td>CVaR / 條件尾端風險 (95%)</td><td>4.481%</td><td>TWD 44,810</td></tr></tbody></table>
+    <p style="font-size:9pt; color:#555;">在 95% 信心水準下，任一交易日的最大單日虧損預期不超過 2.76%（以 100 萬元部位計約新台幣 27,642 元）。以 486 筆歷史觀測值估算。</p>
+    <p style="font-size:9pt; color:#555;">在最差的 5% 交易日中，平均虧損為 4.48%（以 100 萬元部位計約新台幣 44,810 元）。CVaR 以 25 筆尾端觀測值估算。CVaR/VaR 比值 = 1.62（>1.5 代表存在厚尾風險）。</p>
+
+    <h3>市場因子曝險（CAPM）</h3>
+    <table><thead><tr><th>CAPM 指標</th><th>數值</th></tr></thead><tbody><tr><td>Beta（相對 0050.TW）</td><td>1.1195</td></tr><tr><td>Jensen's Alpha（年化）</td><td>2.476%</td></tr><tr><td>R²（市場解釋力）</td><td>0.8450</td></tr><tr><td>Treynor Ratio</td><td>0.4969</td></tr><tr><td>系統性風險</td><td>84.5%</td></tr><tr><td>非系統性風險</td><td>15.5%</td></tr></tbody></table>
+    <p style="font-size:9pt; color:#555;">Beta=1.119（高於大盤 Beta——偏積極型。）。Jensen's Alpha=2.48%（年化，高於 CAPM 預期的正超額報酬）。R²=0.845：84.5% 的變異可由大盤解釋。系統性風險 = 84.5%，非系統性風險 = 15.5%。</p>
+
+    
+        <h3>壓力測試情境</h3>
+        <table><thead><tr><th>情境</th><th>期間</th><th>部位報酬率</th><th>市場對照</th></tr></thead><tbody><tr><td>COVID 崩盤</td><td>2020/02/20 – 2020/03/23</td><td><span class="col-warn">-32.5%（估計值）</span></td><td>-29.0%</td></tr><tr><td>2022 聯準會升息循環</td><td>2022 全年</td><td><span class="col-warn">-24.6%（估計值）</span></td><td>-22.0%</td></tr><tr><td>2008 全球金融危機</td><td>2008/09 – 2009/03</td><td><span class="col-warn">-58.2%（估計值）</span></td><td>-52.0%</td></tr><tr><td>台海緊張情勢（假設情境）</td><td>假設：5 日內下跌 15%</td><td><span class="col-warn">-16.8%（估計值）</span></td><td>-15.0%</td></tr><tr><td>科技股拋售（假設情境）</td><td>假設：仿那斯達克式 6 個月內下跌 40%</td><td><span class="col-warn">-32.0%（估計值）</span></td><td>-40.0%</td></tr></tbody></table>
+        <div class="methodology">
+          歷史情境：該期間內部位的實際報酬率。
+          假設情境：以 β × 市場衝擊估算。標註「（估計值）」代表歷史資料有限，採用 beta 外推法估計。
+        </div>
+        
+    
+</div>
+
+  
+<div class="section">
+  <h2>五、基本面概覽</h2>
+  
+    <table><thead><tr><th>指標</th><th>數值</th><th>備註</th></tr></thead><tbody><tr><td>EPS（最近一季）</td><td>22.08</td><td>TWD</td></tr><tr><td>ROE</td><td>32.72%</td><td>股東權益報酬率</td></tr><tr><td>毛利率</td><td>66.25%</td><td></td></tr><tr><td>淨利率</td><td>50.51%</td><td></td></tr><tr><td>營收年增率 (YoY)</td><td>67.87%</td><td>與去年同月相比</td></tr></tbody></table>
+    
+        <p style="font-size:9pt; color:#555;">
+          可用營收資料：共 12 個月度觀測值。
+        </p>
+        
+    
+        <h3>法人買賣超（最新可得資料）</h3>
+        <table><thead><tr><th>法人類別</th><th>買進（股）</th><th>賣出（股）</th><th>買賣超</th></tr></thead><tbody><tr><td>Dealer_Hedging</td><td>3,015,089</td><td>846,918</td><td><span class="col-sig">+2,168,171</span></td></tr><tr><td>Dealer_self</td><td>953,995</td><td>397,500</td><td><span class="col-sig">+556,495</span></td></tr><tr><td>Foreign_Dealer_Self</td><td>0</td><td>0</td><td><span class="col-neutral">+0</span></td></tr><tr><td>Foreign_Investor</td><td>42,318,827</td><td>28,538,728</td><td><span class="col-sig">+13,780,099</span></td></tr><tr><td>Investment_Trust</td><td>7,243,889</td><td>180,000</td><td><span class="col-sig">+7,063,889</span></td></tr></tbody></table>
+        
+    <div class="methodology">
+      基本面資料來源為 FinMind API（免費版，季度更新頻率）。
+      EPS 與毛利率／淨利率反映最近可得的申報期間，相較於當季實際財報，
+      可能有最長 45 天的資料落後。
+    </div>
+    
+</div>
+
+  
+<div class="section">
+  <h2>六、研究方法、限制與參考文獻</h2>
+  
+    <h3>資料來源</h3>
+    <ul style="font-size:9.5pt;">
+      <li><strong>價格資料：</strong>yfinance（Yahoo Finance 資料源，已依股票分割與除息自動調整）。
+          比較基準：0050.TW（台灣50 ETF）。</li>
+      <li><strong>基本面資料：</strong>FinMind API（免費版，TaiwanStockFinancialStatements
+          與 TaiwanStockMonthRevenue 資料集）。</li>
+      <li><strong>交叉驗證：</strong>TWSE 即時 API（mis.twse.com.tw）用於價格正確性檢核。</li>
+    </ul>
+
+    <h3>技術指標</h3>
+    <ul style="font-size:9.5pt;">
+      <li>MA5、MA20、MA60：簡單移動平均線（不含前視偏誤）。</li>
+      <li>RSI(14)：採用 Wilder 指數平滑法。</li>
+      <li>MACD：EMA(12,26,9)——Bloomberg 標準算法（adjust=False）。</li>
+      <li>KD 隨機指標：採台股慣用 1/3 平滑法。</li>
+      <li>布林通道 (Bollinger Bands)：20日 ±2σ（樣本標準差，ddof=1）。</li>
+    </ul>
+
+    <h3>量化模型</h3>
+    <ul style="font-size:9.5pt;">
+      <li><strong>因子 IC：</strong>因子值[t]與報酬率[t+1]之 Spearman 等級相關係數。
+          屬時間序列 IC，適用於單一股票分析；與多股票樣本的橫斷面 IC 意義不同，判讀時應加以區分。</li>
+      <li><strong>Walk-forward 回測：</strong>依時間先後切分 IS/OOS，避免前視偏誤；
+          以次日開盤價執行，並強制以台股一張（1,000股）為交易單位。</li>
+      <li><strong>VaR/CVaR：</strong>採歷史模擬法，不假設特定機率分布。</li>
+      <li><strong>Beta/Alpha：</strong>以日報酬率對 0050.TW 基準進行 OLS 迴歸。</li>
+      <li><strong>Hurst 指數：</strong>以多組子期間長度進行 R/S 分析。</li>
+      <li><strong>Jarque-Bera 檢定：</strong>採用卡方臨界值 5.991（α=0.05，自由度 2）。</li>
+    </ul>
+
+    <h3>已知限制</h3>
+    <ul style="font-size:9.5pt;">
+      <li>單一股票分析：未完全控制產業與總體經濟因子曝險。</li>
+      <li>資料品質：免費版 API 可能存在資料缺口；公司事件（股票分割、除息）
+          可能造成偶發性的 OHLC 不一致。</li>
+      <li>單一時間序列的因子 IC，統計檢定力低於大樣本橫斷面研究。</li>
+      <li>回測模擬未考慮市場衝擊成本、流動性限制，或超出固定手續費模型之買賣價差。</li>
+      <li>壓力測試中的假設情境採用 beta 外推法，假設線性關係——實際危機期間的行為往往是非線性的。</li>
+      <li>所有指標皆假設可依所述價格成交；實際成交結果可能有所不同。</li>
+    </ul>
+
+    <h3>參考文獻</h3>
+    <ol style="font-size:9pt; color:#444;">
+      <li>Sharpe, W.F. (1966). Mutual Fund Performance. <em>Journal of Business</em>, 39(1), 119–138.</li>
+      <li>Grinold, R.C., &amp; Kahn, R.N. (2000). <em>Active Portfolio Management</em>. McGraw-Hill.</li>
+      <li>Artzner, P. et al. (1999). Coherent Measures of Risk. <em>Mathematical Finance</em>, 9(3), 203–228.</li>
+      <li>Hurst, H.E. (1951). Long-Term Storage Capacity of Reservoirs. <em>Transactions of ASCE</em>, 116.</li>
+      <li>Fama, E.F., &amp; French, K.R. (1993). Common risk factors in stock and bond returns.
+          <em>Journal of Financial Economics</em>, 33(1), 3–56.</li>
+      <li>Jarque, C.M., &amp; Bera, A.K. (1987). A test for normality of observations and regression residuals.
+          <em>International Statistical Review</em>, 55(2), 163–172.</li>
+    </ol>
+    
+</div>
+
+
+  <div style="text-align:center; font-size:8pt; color:#999; margin-top:40px;
+              border-top:1px solid #ddd; padding-top:8px;">
+    本報告由 Taiwan Stock Analyzer 研究平台自動產生，僅供學術與研究用途，不得轉載散布。
+    報告產生時間：2026-08-01
+  </div>
+
+</div>
+</body>
+</html>
