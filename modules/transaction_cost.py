@@ -32,6 +32,14 @@ TW_ONE_WAY_COST_BASE   = 0.0030   # 0.30%: commission + STT + market impact (con
 TW_ONE_WAY_COST_OPT    = 0.0020   # 0.20%: optimistic (low-cost online broker)
 TW_ONE_WAY_COST_TIGHT  = 0.0015   # 0.15%: tight estimate (TWSE 50 mega-caps only)
 
+# US default cost assumptions (one-way, in decimal, not percent).
+# Most US retail brokers have been $0-commission since 2019; the remaining
+# real cost is bid-ask spread + market impact, which is much smaller for
+# S&P 500 / NASDAQ-100-level large caps than for TW mid-caps.
+US_ONE_WAY_COST_BASE   = 0.0006   # 6 bps: typical liquid large-cap spread+impact
+US_ONE_WAY_COST_OPT    = 0.0004   # 4 bps: optimistic (mega-cap, tight spread)
+US_ONE_WAY_COST_TIGHT  = 0.0003   # 3 bps: tight estimate (SPY/QQQ-level mega-caps)
+
 ANNUAL_FACTOR = 252
 
 
