@@ -311,3 +311,40 @@ Full row-level evidence: `exports/tw_us_backtest/audit/us_universe_reconciliatio
 ### Corrected reporting language (supersedes all earlier "beats SPY and QQQ" statements)
 
 > In the initial seed-42, available-data sample, the three US strategy configurations produced higher CAGR than SPY and QQQ. Across a 30-seed multi-sample robustness test, **this CAGR-outperformance result is not typical** — median CAGR (13.16%) trails SPY, and only 26.7% of seeds beat SPY / 6.7% beat QQQ on CAGR. What IS robust across all 30 seeds is a **materially and consistently lower maximum drawdown** than either benchmark, and a **trade-level Profit Factor above 1.0 in every single seed** — the strategy's demonstrated edge is a risk-reduction and consistency effect, not a reliable CAGR-outperformance effect. Any claim that "US strategies beat SPY and QQQ" must be qualified this way going forward.
+
+---
+
+## 13. Phase 2.5 gate item #6 — US robustness suite (all three tiers, seed-42 universe)
+
+`scripts/dev/run_us_robustness.py`. Covers cost stress (3 tiers), remove-best-stock/top-3, remove-best-year, sub-period split, per-fold MDD — same categories as the TW suite (§9). NOT covered: different starting dates, N-holdings variants, rebalance-frequency variants, parameter-adjacency grid, sector concentration, bootstrap path analysis (bootstrap was run for TW only; same method applies to US but wasn't re-run here given time).
+
+### Cost stress (all tiers, trade-level Profit Factor)
+
+| Tier | Standard | Doubled | Stress |
+|---|---|---|---|
+| Conservative | CAGR 20.06% / PF 1.705 | CAGR 18.86% / PF 1.640 | CAGR 17.53% / **PF 1.571** |
+| Balanced | CAGR 23.35% / PF 1.682 | CAGR 21.50% / PF 1.610 | CAGR 19.48% / **PF 1.533** |
+| Aggressive | CAGR 23.71% / PF 1.573 | CAGR 21.41% / PF 1.506 | CAGR 18.89% / **PF 1.436** |
+
+**Unlike TW (where only Conservative survived the stress scenario with PF>1, Balanced/Aggressive fell below 1.0), all three US tiers keep Profit Factor comfortably above 1.0 even under stress cost** — a genuinely more robust cost profile, consistent with US's much lower cost regime (3-18bps vs TW's 15-90bps one-way). This is a real, positive finding specific to the seed-42 universe; multi-seed cost-stress testing for Balanced/Aggressive was not run given time constraints.
+
+### Remove-best-stock / top-3 (conservative, seed 42)
+
+Top contributor: **RIG** (Transocean, net P&L +$292,170). Top 3: RIG, M (Macy's), ORCL (Oracle) — combined +$618,085. Removing just RIG drops CAGR from 20.06% to 17.91% (-2.14pp); removing all top 3 drops it to 14.68% (**-5.38pp, a much larger single-stock dependency than TW's -2.08pp for its top 3**) — consistent with the multi-seed finding that seed 42's result leans on a few large winners more than a typical draw would.
+
+### Remove-best-year (conservative, seed 42)
+
+Best year: 2021 (+32.39%, the COVID-recovery year). Excluding it: CAGR drops from 20.06% to **14.93%**.
+
+### Sub-period check (conservative, seed 42)
+
+| Period | CAGR | MDD |
+|---|---|---|
+| 2019-09 to 2021-12 (COVID rebound) | **38.36%** | -14.23% |
+| 2022-01 to 2026-02 | **10.79%** | -13.75% |
+
+Same pattern as TW, more pronounced: the 20.06% headline CAGR is heavily front-loaded into the COVID-rebound period. Post-2022 performance (10.79%) is more modest but still clearly positive, and — notably — the **MDD stays consistent (-13.75% to -14.23%) across both sub-periods**, reinforcing that the drawdown-reduction property is the more durable finding, not the raw CAGR level.
+
+### Per-fold MDD consistency (conservative, seed 42)
+
+Ranges -4.64% to -14.23% across 13 folds — no single fold dominates, consistent with the multi-seed distribution's median MDD (-16.94%).
