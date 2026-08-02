@@ -348,3 +348,19 @@ Same pattern as TW, more pronounced: the 20.06% headline CAGR is heavily front-l
 ### Per-fold MDD consistency (conservative, seed 42)
 
 Ranges -4.64% to -14.23% across 13 folds — no single fold dominates, consistent with the multi-seed distribution's median MDD (-16.94%).
+
+---
+
+## 14. Phase 2.5 gate item #4 — delisting/missing-security sensitivity scenarios
+
+**Corrected framing (per user instruction):** the earlier claim that missing acquired stocks "probably cause underestimation" was an inference, not a measured fact. Replaced with: **the direction and magnitude of bias from the 11 unavailable US securities are uncertain, because they are a non-random subset of the historical universe** (mostly M&A targets, not random dropouts — §11). The available-data-only result (§2's US tables) is NOT presented as survivorship-bias-free.
+
+`scripts/dev/run_us_delisting_sensitivity.py` ran three scenarios (all US-Conservative-v1, seed-42 universe):
+
+| Scenario | Universe | CAGR | MDD | Calmar | Profit Factor | Phantom trades |
+|---|---|---|---|---|---|---|
+| A. Available-data-only (existing baseline) | 39 real tickers | 20.06% | -14.23% | 1.409 | 1.705 | n/a |
+| B. Conservative terminal-value (11 SYNTHETIC flat placeholders added) | 39 real + 11 synthetic | 13.36% | -13.41% | 0.996 | 2.267 | 81 |
+| C. Adverse missing-security (11 SYNTHETIC -50%-decline placeholders added) | 39 real + 11 synthetic | 19.75% | -16.51% | 1.196 | 2.229 | 0 |
+
+**Important methodological caveat, disclosed rather than glossed over:** Scenario B's lower CAGR is NOT simply "diversification with neutral stand-ins" — the perfectly flat (zero-volatility) synthetic series got selected 81 times, an artifact of how momentum/trend ranking treats a security with *exactly* zero price movement (it can rank above real stocks during drawdowns, when real momentum is negative). This is a known limitation of the flat-placeholder construction, not a realistic model of what any real delisted company would have done. Scenario C's declining phantoms were correctly avoided by the ranking (0 trades) and landed close to baseline. **Read this as: results are demonstrably sensitive to the missing-security assumption (13.36%–20.06%, calmar 1.0–1.4), but the specific numeric width of that range should not be over-trusted — it is bounded by a synthetic construction with its own artifacts, not a recovered historical fact.** A production-grade resolution requires real historical prices for the missing 11 (out of scope — §8.2).
