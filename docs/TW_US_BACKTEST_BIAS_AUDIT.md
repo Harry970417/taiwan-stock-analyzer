@@ -211,3 +211,20 @@ Despite (8.1), the Phase 2 universe (50 tickers randomly sampled, seed=42, from 
 - Factor set: TECHNICAL ONLY (`momentum, trend, rsi_factor, volume_factor, macd_factor`) — there is no US equivalent of FinMind's fundamental/institutional-flow data in this project. Explicitly narrower than TW's 10-factor set; not silently normalized to look equivalent.
 - Splits/mergers/ticker changes: not specially handled beyond `auto_adjust=True`'s split adjustment; a ticker that changed symbol (e.g. Cimarex Energy → Coterra Energy, XEC → CTRA) is not stitched across the rename and effectively appears as two different, disconnected histories if fetched by both symbols — `CTRA` itself failed to fetch in this run (§8.2), so this specific case did not silently corrupt results, but the general risk is disclosed, not fixed.
 - Cost model: `US_ONE_WAY_COST_{TIGHT,BASE}` in `transaction_cost.py` (3-6 bps) reflect near-zero commission + spread/impact for large-cap US names, materially lower than TW's 15-30 bps regime — the two markets are NOT assumed to have the same cost structure.
+
+---
+
+## 9. TW-Conservative-v1 robustness suite (subset; `scripts/dev/run_tw_robustness.py`)
+
+Covers items 3, 4, 6, 7, 8, and part of 15 from the requested 15-point list. NOT covered (still pending, not silently skipped): parameter sensitivity grid / adjacent-parameter stability heatmap, different N-holdings variants, different rebalance frequencies, dividend-inclusion on/off comparison, additional slippage variants beyond the 3 cost scenarios already run, and industry-concentration analysis.
+
+| Question | Answer |
+|---|---|
+| How much of the 11.28% CAGR comes from the top 3 stocks? | Removing the top 3 contributors (2603.TW 長榮, 2382.TW 廣達, 2303.TW 聯電) drops CAGR to 9.20% — a **2.08pp** contribution (≈18% of the total), leaving the strategy still clearly profitable without them. Not a single-stock-driven result. |
+| CAGR excluding the best year? | Best year was 2023 (+23.12%). Excluding it: CAGR drops from 11.28% to **7.74%** — a real, disclosed dependency on one strong year, but the strategy remains positive without it. |
+| Profit Factor after cost doubling? | Trade-level Profit Factor under the `stress` cost scenario (≈2x standard + wider slippage): **1.220** — still above 1.0, survives the stress test (see §7's cost-stress table; Balanced/Aggressive do NOT survive: 0.911 / 0.921). |
+| Does MDD reduction hold across all folds? | Yes — per-fold MDD ranges -3.13% to -15.00% across 10 fold groups, all well inside the -17.01% aggregate figure; no single fold drives the result. |
+| Is this only a COVID-rebound effect? | **Partially, and materially so.** Sub-period CAGR: 2019-09→2021-12 (includes the COVID rebound) = **20.65%**; 2022-01→2026-02 = **6.29%**. Performance is more than 3x higher in the rebound period than after. The strategy remains net positive post-2022, but the earlier headline 11.28% CAGR is not representative of the more recent, harder regime — this should be weighted heavily in any go/no-go decision, not treated as a footnote. |
+| Bootstrap: was the realized MDD a lucky ordering? | Realized period-compounded MDD (-14.57%) sits at the **76.9th percentile** of 1000 randomly-reordered-period simulations (seed=42) — i.e., the actual sequence of returns was somewhat more favorable than a typical random ordering (which would average -17.6%), but not in the extreme tail. Mild, not dramatic, ordering luck. |
+
+**Net assessment:** TW-Conservative-v1's edge is real (survives stock removal, cost stress, and is not concentrated in a single fold), but it is meaningfully front-loaded into the 2019-2021 recovery period, and a non-trivial share of the full-period CAGR depends on one strong year (2023). This should be disclosed as a material caveat alongside the "beats TAIEX on Calmar" framing, not omitted.
