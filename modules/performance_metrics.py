@@ -178,3 +178,44 @@ def cost_to_gross_profit_ratio(total_cost: float, gross_profit: float) -> float:
     if gross_profit is None or gross_profit <= 0:
         return float("nan")
     return float(total_cost / gross_profit)
+
+
+def max_win(trades) -> float:
+    pnls = _completed_trade_pnls(trades)
+    wins = pnls[pnls > 0]
+    return float(wins.max()) if len(wins) else float("nan")
+
+
+def max_loss(trades) -> float:
+    pnls = _completed_trade_pnls(trades)
+    losses = pnls[pnls < 0]
+    return float(losses.min()) if len(losses) else float("nan")
+
+
+def longest_streaks(trades) -> dict:
+    """
+    Longest consecutive-win and consecutive-loss run lengths, in trade
+    order (caller must pass trades already sorted by exit date / sequence
+    -- this function does not sort).
+    """
+    pnls = _completed_trade_pnls(trades)
+    if len(pnls) == 0:
+        return {"longest_win_streak": 0, "longest_loss_streak": 0}
+    win_streak = loss_streak = max_win_streak = max_loss_streak = 0
+    for p in pnls:
+        if p > 0:
+            win_streak += 1
+            loss_streak = 0
+        elif p < 0:
+            loss_streak += 1
+            win_streak = 0
+        else:
+            win_streak = loss_streak = 0
+        max_win_streak = max(max_win_streak, win_streak)
+        max_loss_streak = max(max_loss_streak, loss_streak)
+    return {"longest_win_streak": max_win_streak, "longest_loss_streak": max_loss_streak}
+
+
+def avg_holding_days(holding_days) -> float:
+    d = pd.Series(holding_days).dropna()
+    return float(d.mean()) if len(d) else float("nan")

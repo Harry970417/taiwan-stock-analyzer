@@ -18,6 +18,10 @@ from modules.performance_metrics import (
     sortino_ratio,
     turnover,
     cost_to_gross_profit_ratio,
+    max_win,
+    max_loss,
+    longest_streaks,
+    avg_holding_days,
 )
 
 
@@ -211,3 +215,37 @@ class TestTurnoverAndCost:
     def test_cost_ratio_zero_or_negative_profit_guarded(self):
         assert np.isnan(cost_to_gross_profit_ratio(10.0, 0.0))
         assert np.isnan(cost_to_gross_profit_ratio(10.0, -5.0))
+
+
+# ─────────────────────────────────────────────────────────────────────────────
+# max_win / max_loss / longest_streaks / avg_holding_days
+# ─────────────────────────────────────────────────────────────────────────────
+
+class TestTradeLevelExtras:
+    def test_max_win_and_max_loss_hand_calc(self):
+        pnls = [10.0, -5.0, 20.0, -8.0, 3.0]
+        assert max_win(pnls) == pytest.approx(20.0)
+        assert max_loss(pnls) == pytest.approx(-8.0)
+
+    def test_max_win_no_wins_is_nan(self):
+        assert np.isnan(max_win([-1.0, -2.0]))
+
+    def test_max_loss_no_losses_is_nan(self):
+        assert np.isnan(max_loss([1.0, 2.0]))
+
+    def test_longest_streaks_hand_calc(self):
+        # sequence: W W L W W W L L order matters (in-order, not sorted)
+        pnls = [1, 2, -1, 3, 4, 5, -2, -3]
+        result = longest_streaks(pnls)
+        assert result["longest_win_streak"] == 3   # the 3,4,5 run
+        assert result["longest_loss_streak"] == 2  # the -2,-3 run
+
+    def test_longest_streaks_empty(self):
+        result = longest_streaks([])
+        assert result == {"longest_win_streak": 0, "longest_loss_streak": 0}
+
+    def test_avg_holding_days_hand_calc(self):
+        assert avg_holding_days([10, 20, 30]) == pytest.approx(20.0)
+
+    def test_avg_holding_days_empty_is_nan(self):
+        assert np.isnan(avg_holding_days([]))
