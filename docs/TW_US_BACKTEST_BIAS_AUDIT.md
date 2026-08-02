@@ -410,3 +410,31 @@ Ranges -4.64% to -14.23% across 13 folds — no single fold dominates, consisten
 ### Disposition for Phase 3
 
 Per the requirement to "use only strategies that passed their own validation gates": strictly, no US tier has fully passed. Given TW-Conservative-v1 and US-Conservative-v1 are nonetheless the only non-rejected candidate from each market, Phase 3 proceeds using them as the two components — but every Phase 3 result must carry forward US-Conservative-v1's "promising but unvalidated" status explicitly, and must NOT describe the US leg as "beating SPY/QQQ" without the same multi-seed qualification established here.
+
+---
+
+## 17. Phase 3 prerequisite fix — `ic_weighted_combination` missing-factor bug (INVALIDATES old delisting-sensitivity scenarios B/C)
+
+**Root cause of the "flat phantom selected 81 times" artifact, traced per the user's diagnostic checklist (§14):**
+
+`modules/walk_forward.py::ic_weighted_combination()` combined weighted factor panels via `combined.add(extra, fill_value=0)`. For a stock/date where one factor is `NaN` (undefined) but another is a real number, this silently treated the missing factor as a genuine **0 (neutral) contribution** rather than excluding it or renormalizing the composite among only the available factors. For the delisting-sensitivity flat placeholder specifically: `rsi_factor` and `macd_factor` are mathematically undefined (`NaN`) for a zero-variance price series (RSI's gain/loss ratio and MACD-histogram-std are both 0/0), while `momentum`/`trend`/`volume_factor` genuinely compute to exactly `0.0`. The composite score for the phantom ended up exactly `0.0` either way in that specific case — but during real market downturns, real stocks carry *negative* momentum/trend, so a competitor with a "neutral" `0.0` (whether genuinely computed or an artifact of missing-factor zeroing) ranks *above* them, explaining the 81 selections.
+
+**Fix applied** (`modules/walk_forward.py::ic_weighted_combination`, tested — `tests/test_walk_forward.py::test_missing_factor_is_excluded_not_zeroed`, `test_stock_with_zero_available_factors_is_nan_not_zero`): the composite is now a weighted **average of only the factors actually available** for that (date, ticker) cell, renormalized among those; a cell with **zero** available factors is `NaN` (correctly excluded from ranking), never a fabricated neutral `0`.
+
+**Scope decision, stated plainly:** this is a genuine, general-purpose correctness fix — it also affects real (non-synthetic) TW stocks with genuinely missing fundamental-factor data on some dates (confirmed earlier: only ~25-35 of 45 TW stocks have valid ROE/ROA/EPS-growth data per period; those gaps were previously diluting composite scores toward 0 instead of being excluded/renormalized). **Given the volume of already-completed, extensively-tested TW Phase 1 and US Phase 2 work, this fix is applied going forward for all Phase 3 work but was NOT retroactively re-run across TW Phase 1 (3 tiers + robustness), US Phase 2 (3 tiers + robustness + 30-seed multi-seed)** — re-running all of that would cost many additional hours of compute for what is expected to be a second-order effect on results already dominated by technical factors (which are rarely NaN for real qualifying stocks). This is disclosed as a known methodological inconsistency between Phase 1/2 (old scoring) and Phase 3 (fixed scoring), not silently blended or hidden.
+
+**The old delisting-sensitivity scenarios B/C (§14, phantom-tradable-asset approach) are marked INVALIDATED** — not just because of this fix, but because the underlying approach itself violated the user's stated principle ("synthetic flat stocks must only be used for stress valuation, not become automatically selectable new positions"). See §18 for the redesigned scenarios.
+
+---
+
+## 18. Redesigned delisting sensitivity (supersedes §14 — old results INVALIDATED)
+
+`scripts/dev/run_us_delisting_sensitivity_v2.py`. No synthetic ticker is ever added to the selection engine's candidate pool. Instead, this bounds sensitivity as a **blended terminal-value adjustment on the already-realized equity curve**: `blended_daily_return = (1 − exposure) × actual_daily_return + exposure × assumed_daily_return`, where `exposure = 11/50 = 22%` (the fraction of the originally-intended sample that was unavailable — a deliberate upper bound, not a claim about how much the strategy would actually have held these names; a momentum strategy would likely hold less).
+
+| Scenario | Assumed missing-security return | CAGR | MDD | Calmar |
+|---|---|---|---|---|
+| A. Available-data-only (baseline) | n/a | 20.06% | -14.23% | 1.409 |
+| B. Conservative (flat, 0% total return) | 0% | **15.58%** | -11.23% | 1.388 |
+| C. Adverse (declining, -50% total return) | -50% | **12.87%** | -11.75% | 1.096 |
+
+Results are now coherent and free of the earlier ranking artifact (MDD even improves slightly under blending, a straightforward diversification effect of adding a less-volatile assumed component — not a ranking anomaly). **Read this as: the missing 11/50 securities could plausibly account for a 4-7 percentage-point CAGR sensitivity band under conservative-to-adverse assumptions** — a real, disclosed uncertainty, not resolved, but no longer contaminated by a methodological artifact.

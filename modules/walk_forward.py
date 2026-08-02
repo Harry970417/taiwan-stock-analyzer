@@ -92,7 +92,16 @@ def ic_weighted_combination(
 
     Returns
     -------
-    pd.DataFrame (date × tickers) composite factor panel
+    pd.DataFrame (date × tickers) composite factor panel. A cell is NaN
+    if NO factor has a value for that (date, ticker) -- it is never
+    silently treated as a neutral 0, which would let a stock/date with
+    missing or degenerate factor data (e.g. a zero-variance price series
+    where RSI/MACD are undefined) rank as if it had a genuinely-computed
+    zero score. Found via the Phase 2.5/3 delisting-sensitivity audit:
+    see docs/TW_US_BACKTEST_BIAS_AUDIT.md. Where a stock has SOME but not
+    all factors available on a date, the composite is the weighted
+    average of the AVAILABLE factors only (weights renormalized among
+    those), not a sum that implicitly zeros out the missing ones.
     """
     weights = {}
     for fname, ic_s in ic_series_is.items():
@@ -108,24 +117,28 @@ def ic_weighted_combination(
     weights = {f: w / total for f, w in weights.items()}
 
     start, end = dates_range
-    composite_list = []
+    value_list = []       # weight * factor_value (NaN where factor missing)
+    weight_present_list = []  # weight where factor present at that cell, else 0
     for fname, w in weights.items():
         panel = factor_panels.get(fname)
         if panel is None or panel.empty:
             continue
-        sub = panel.loc[
-            (panel.index >= start) & (panel.index <= end)
-        ]
-        composite_list.append(sub * w)
+        sub = panel.loc[(panel.index >= start) & (panel.index <= end)]
+        value_list.append(sub * w)
+        weight_present_list.append(sub.notna().astype(float) * w)
 
-    if not composite_list:
+    if not value_list:
         return pd.DataFrame()
 
-    # Sum weighted panels (align on common index/columns)
-    combined = composite_list[0].copy()
-    for extra in composite_list[1:]:
-        combined = combined.add(extra, fill_value=0)
+    weighted_sum = value_list[0].fillna(0.0)
+    weight_present = weight_present_list[0]
+    for v, wp in zip(value_list[1:], weight_present_list[1:]):
+        weighted_sum = weighted_sum.add(v.fillna(0.0), fill_value=0.0)
+        weight_present = weight_present.add(wp, fill_value=0.0)
 
+    with np.errstate(invalid="ignore", divide="ignore"):
+        combined = weighted_sum / weight_present
+    combined = combined.where(weight_present > 0)  # no factors available at all -> NaN, not 0
     return combined
 
 
