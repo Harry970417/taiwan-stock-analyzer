@@ -115,3 +115,73 @@ No backtest engine exists (repo's own `README.md:256,80` explicitly states this 
 - Cross-market FX/timezone alignment (Phase 3).
 - Empirical verification of *every* historical stock/date (only the seeded 10-stock/3-year/5-boundary-date sample was checked — this is a spot-check, not exhaustive proof).
 - True TW delisting-date data (still unavailable from free APIs; the PIT mechanism disclosed in §2.1 mitigates entry-side survivorship bias only, not exit-side).
+
+---
+
+## 7. TW Phase 1 methodology addendum (2026-08-02 correction)
+
+After the first TW Phase 1 results were reported, several methodology gaps were flagged and are corrected here.
+
+### 7.1 Metric naming correction — period-level ≠ trade-level
+
+The original report's "win rate", "avg payoff ratio", and "Profit Factor" for each strategy tier were computed over the ~27–54 **rebalance periods** (one portfolio-level return observation per monthly rebalance window), not individual stock trades. This is now renamed everywhere in reporting:
+
+| Old (incorrect) label | Corrected label (EN) | Corrected label (中文) |
+|---|---|---|
+| Win Rate | Positive Rebalance Period Rate | 再平衡期間正報酬率 |
+| Avg Payoff Ratio | Rebalance-Period Payoff Ratio | 期間平均賺賠比 |
+| Profit Factor | Rebalance-Period Profit Factor | 期間獲利因子 |
+
+True individual-stock trade-level statistics (win rate, avg win/loss, Profit Factor, max win/loss, consecutive streaks, avg holding days) are now computed separately from a new **individual-stock trade ledger** (`modules/trade_ledger.py`, see §7.6) and reported under distinct column names (`trade_win_rate_pct`, etc.) in `exports/tw_us_backtest/taiwan/taiwan_results_trade_level.csv`. The two are never blended into one number — see `taiwan_results_period_level.csv` vs `taiwan_results_trade_level.csv`.
+
+### 7.2 Universe disclosure correction
+
+Previous wording ("wider than V1, reduces but doesn't eliminate survivorship bias") understated the limitation. Corrected disclosure, used verbatim in all TW Phase 1 outputs going forward:
+
+> 股票池由目前可辨識且流動性良好的股票建立，雖然使用上市日期與時點資料限制，但仍未包含完整歷史下市股票及歷年市場成分，因此正式結果可能高估真實可投資績效。
+>
+> ("The universe is built from stocks that are identifiable and liquid *today*. Although listing-date/point-in-time filtering is applied, it does not include the full set of historically delisted stocks or actual historical index constituents for each year of the study window. Formal results therefore likely overstate true achievable investable performance.")
+
+TW Phase 1 is positioned as: **"固定研究股票池之 Walk-Forward 樣本外回測" (a Walk-Forward out-of-sample backtest over a fixed research universe)** — explicitly NOT "完整台股市場無倖存者偏誤回測" (a full-market, survivorship-bias-free TW backtest).
+
+### 7.3 Walk-forward OOS cutoff explanation
+
+Raw price data covers 2016-08-01 → 2026-07-31, but the formal walk-forward result only covers OOS periods through **2026-02-02**. This is not a truncation bug:
+
+- Fold structure: 36-month train window → 6-month test window → 6-month step (see `modules/walk_forward.py::generate_fold_dates`).
+- `generate_fold_dates()` only keeps a fold whose **entire** test window fits inside the available data range (`oos_end <= end_date`). The exact per-fold train/test date boundaries are in `exports/tw_us_backtest/summary/walk_forward_fold_schedule.csv` (reproduced by `scripts/dev/run_tw_phase1_backtest.py`).
+- The last complete fold's test window ends 2026-02-02. The remaining data (2026-02-02 → 2026-07-31, ~5 months) is shorter than the required 6-month test window, so no additional complete fold exists — it is correctly excluded, not silently dropped.
+- The formal, primary result is always the fully-stitched complete-fold OOS curve. It is not re-cut or extended after the fact to reach a more recent date.
+- A separate **"Latest Partial Holdout Supplement"** (using the already-frozen v1 tier configs/parameters, no re-tuning) may be produced against the 2026-02→2026-07 partial window and reported *separately*, clearly labeled as a partial/incomplete-fold supplement, never merged into the formal walk-forward number.
+
+### 7.4 Benchmark comparison methodology audit (9 questions)
+
+| # | Question | Answer |
+|---|---|---|
+| 1 | Does 0050 use adjusted price / dividend reinvestment? | Yes — fetched via `yf.Ticker("0050.TW").history(auto_adjust=True)`, which back-adjusts historical prices for both cash dividends and splits (a total-return-like series). |
+| 2 | Does the strategy capture cash dividends while holding a stock? | Implicitly, yes — all `universe_data` OHLCV (used for both signal construction and trade P&L) is fetched with `auto_adjust=True` (`utils/data_fetcher.py:26`), so dividend effects are embedded in the adjusted price series. There is **no separate itemized cash-dividend event**; `trade_ledger.dividends_received` is fixed at 0.0 with this caveat documented, not fabricated as a nonzero number. |
+| 3 | Is TAIEX a price index or total-return index? | **Price index only.** `^TWII` via yfinance reflects TWSE's 發行量加權股價指數 (price index); dividends are NOT included. TWSE's separate "報酬指数" (Total Return Index) is not available through this data source. All TAIEX rows are labeled `TAIEX (PRICE INDEX ONLY -- dividends NOT included)` — never presented as a total-return comparison. |
+| 4 | Does the equal-weight pool include rebalancing cost? | Two variants are now reported: `EqualWeight45_no_cost_*` (continuously rebalanced, zero cost — an academic reference, not a tradeable benchmark) and `EqualWeight45_with_cost_monthly_rebalance_*` (realistic monthly rebalance back to equal weight, standard TW one-way cost incl. slippage). |
+| 5 | Do all benchmarks use the exact same dates as the strategy? | Yes for the `_matched_OOS_window` rows — sliced to the strategy's actual walk-forward OOS start/end date (`oos_start`/`oos_end` printed by the run script), not just the full 10-year study period. `_full_period` rows are also reported for context but are explicitly a *different, unfair* comparison window and labeled as such. |
+| 6 | Are benchmarks 100% invested? | Yes — 0050/TAIEX (single-instrument buy-hold) and the equal-weight pool (always renormalized to sum-to-1 across all valid names) are always fully invested, no idle cash. |
+| 7 | What is the strategy's assumption for un-invested cash? | The engine has no idle-cash concept: `simulate_daily_equity()` always renormalizes selected-position weights to sum to 1 (`w = w / w.sum()`), i.e., 100% invested at all times, with any unavailable/dropped name's weight redistributed to the rest rather than held as cash earning a risk-free rate. |
+| 8 | How are delisted/halted/missing-price stocks handled? | Missing daily price data is forward-filled (`ffill()`) — appropriate for a trading halt (value frozen, matches reality approximately) but WRONG for an actual delisting (would freeze a position that should instead realize a final loss). None of the 45 curated tickers actually delisted during 2016–2026 (all remain listed today, by construction of the "currently identifiable" universe — see §7.2), so this gap does not affect the current numbers, but it is a known limitation of the universe-selection method itself, not a fix applied to the pricing logic. |
+| 9 | Do benchmarks and strategy use the same daily mark-to-market convention? | Mostly, with one disclosed difference: the strategy marks entry/exit dates at OPEN and interior days at CLOSE (T+1-open execution discipline); benchmarks (buy-and-hold instruments, equal-weight pool) mark every day at CLOSE throughout, since they have no discrete entry/exit events beyond the start/end of the window. This is standard for a pure buy-and-hold reference and does not materially bias CAGR/MDD (it only affects the single first/last-day price used, not the entire path). |
+
+Five explicit fairness-comparison rows are now always produced (`exports/tw_us_backtest/summary/benchmark_comparison.csv`): `0050_matched_OOS_window` (dividend-inclusive buy-hold), `EqualWeight45_with_cost_monthly_rebalance_matched_OOS_window`, `EqualWeight45_no_cost_matched_OOS_window`, and each strategy tier's `standard` (with-cost) vs `ideal` (near-zero-cost) cost-scenario row from `cost_stress_test.csv`.
+
+### 7.5 Strategy repositioning (Pareto, v1/v2 versioning)
+
+Based on the OOS evidence already gathered (§ TW Phase 1 results), the three tiers are **not** all being kept as equally-recommended:
+
+- **TW-Conservative-v1** — KEEP. Competitive risk-adjusted vs. the equal-weight pool and TAIEX (comparable/better Calmar, comparable Sharpe), driven by materially lower MDD.
+- **TW-Balanced-v1** — REJECTED. Dominated by every benchmark on every axis (CAGR, MDD, Sharpe, Calmar) over the matched OOS window.
+- **TW-Aggressive-v1** — REJECTED. MDD is comparable to the market's own drawdown despite 5-name concentration, without a compensating CAGR advantage — the concentration risk is not being paid for.
+
+Rejected results are **not deleted or overwritten** — they remain in `taiwan_results_period_level.csv` / `taiwan_results_trade_level.csv` under their original tier names for audit purposes. Any future redesign (e.g. `TW-Balanced-v2`) must select parameters using only a train/validation split that is disjoint from the frozen walk-forward test folds already reported here, and must be given a new version suffix rather than silently replacing the v1 numbers.
+
+### 7.6 Individual-stock trade ledger
+
+`modules/trade_ledger.py::build_trade_ledger()` reconstructs per-symbol trades from the walk-forward run's per-period weight sequence: a symbol newly entering the portfolio opens a trade; a symbol held in consecutive rebalance periods is treated as ONE continuing position (not fabricated round-trips every month); a symbol dropped from the following period's holdings closes at that period's exit date/price (`exit_reason="rebalance_drop"`); a symbol whose cumulative return since its true entry breaches the tier's stop-loss threshold closes early (`exit_reason="stop_loss"`); a symbol still held at the end of the backtest is `status="open"` and excluded from realized win-rate/Profit-Factor statistics (matching the existing "pending trades excluded from denominator" rule in `performance_metrics.py`).
+
+Known simplification, documented rather than silently assumed: stop-loss reference price in the aggregate *equity curve* (`simulate_daily_equity`) resets every rebalance period, while the *trade ledger* checks stop-loss against the position's true original entry price across its whole continuous holding run. This is intentional — the ledger aims for realistic continuous-holding economics — but it means period-level and trade-level P&L are **not** expected to reconcile to the same dollar figures for multi-period holds. Report them separately, as instructed; do not attempt to force them to match.
