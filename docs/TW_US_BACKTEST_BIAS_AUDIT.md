@@ -274,3 +274,40 @@ Full row-level evidence: `exports/tw_us_backtest/audit/us_universe_reconciliatio
 3. **Same investable universe for strategy and benchmark on every date?** Yes — both draw from the identical 39-ticker `universe_data` dict; confirmed no divergence.
 4. **Could TSLA actually enter the backtest after Dec 2020?** No. TSLA was not in the fixed 50-ticker sample (it wasn't an S&P 500 member as of the 2016-08-01 sampling date; it was added 2020-12-21). It was used ONLY as an independent correctness check for `build_pit_sp500_universe()` itself, never as part of the backtest universe.
 5. **Dynamically updated or fixed at research start?** **Fixed.** The 50-ticker sample is drawn ONCE from 2016-08-01 membership and does not change composition as the real S&P 500 adds/removes names during the study window — this is a genuine, disclosed limitation (a true dynamic PIT universe would need per-fold membership updates, not implemented here). This means the backtest is best described as "point-in-time SELECTED, statically HELD," not "continuously point-in-time accurate" throughout the whole 2016–2026 window.
+
+---
+
+## 12. Phase 2.5 gate item #5 — multi-seed universe robustness (CRITICAL FINDING)
+
+**Seed 42 was NOT a typical draw. The original "all US strategies beat SPY and QQQ" claim does not survive multi-seed testing on CAGR, though a different, more modest edge does survive.**
+
+**Method:** `scripts/dev/run_us_multi_seed.py`. A 150-ticker candidate pool was downloaded once (sampled from the real 2016-08-01 PIT S&P 500 membership, pool-seed=0; 126/150 survived the same liquidity/download filters used elsewhere). 30 independent 50-ticker samples (seeds 1–30) were drawn from that pool, each run through the full US-Conservative-v1 walk-forward pipeline from scratch (own factor panels, own folds, own trades). Note: this pool-based sampling frame is disclosed as a tractability compromise — it is not literally "30 fresh draws from the full 506-ticker PIT universe," but a large (126-ticker), independently-fetched subsample of it.
+
+### Results (`us_multi_seed_results.csv`, `us_multi_seed_summary.csv`)
+
+| Statistic | Value |
+|---|---|
+| Median CAGR | **13.16%** |
+| P10 / P90 CAGR | 8.36% / 17.28% |
+| Median MDD | -16.94% |
+| Median Sharpe | 0.852 |
+| Median Calmar | 0.782 |
+| % of seeds beating SPY (16.30% CAGR) | **26.7%** |
+| % of seeds beating QQQ (21.61% CAGR) | **6.7%** |
+| % of seeds with trade-level Profit Factor > 1 | **100%** |
+| Worst seed | seed 1: CAGR 2.76%, MDD -19.65% |
+| Best seed | seed 5: CAGR 19.14%, MDD -21.44% |
+| Seed 42 (original single-seed run, for reference) | CAGR 20.06%, Calmar 1.409 |
+
+**Was seed 42 typical or unusually favorable?** **Unusually favorable.** Seed 42's 20.06% CAGR sits ABOVE the 90th percentile (17.28%) of the 30-seed distribution — i.e., a randomly-chosen universe sample was more likely to underperform seed 42's result than match it. Its Calmar (1.409) is also well above the median (0.782). Seed 42 should never have been presented as representative without this check; it wasn't cherry-picked deliberately, but it also wasn't validated before being reported, which is the exact failure mode this Phase 2.5 gate exists to catch.
+
+**What DOES hold up robustly across all 30 seeds, and should NOT be discarded along with the CAGR claim:**
+- MDD stays in a tight, consistently favorable band (-14% to -21%) across every single seed — dramatically and reliably better than SPY's -33.72% or QQQ's -35.12% matched-window MDD. This is a much more robust finding than the CAGR-outperformance claim.
+- Trade-level Profit Factor exceeds 1.0 in **100% of 30 seeds** (range 1.15–1.72) — the strategy has a genuine, consistent positive edge at the individual-trade level, it's just not large enough to reliably beat SPY/QQQ's CAGR on a like-for-like basis.
+- Median Calmar (0.782) still exceeds both SPY (0.483) and QQQ (0.615) — on a **risk-adjusted** basis the strategy remains generally favorable even though it loses on raw CAGR most of the time.
+
+**Charts:** `exports/tw_us_backtest/charts/us_cagr_distribution.png`, `us_calmar_distribution.png` — both show seed 42 marked as a clear right-tail outlier relative to the 30-seed histogram.
+
+### Corrected reporting language (supersedes all earlier "beats SPY and QQQ" statements)
+
+> In the initial seed-42, available-data sample, the three US strategy configurations produced higher CAGR than SPY and QQQ. Across a 30-seed multi-sample robustness test, **this CAGR-outperformance result is not typical** — median CAGR (13.16%) trails SPY, and only 26.7% of seeds beat SPY / 6.7% beat QQQ on CAGR. What IS robust across all 30 seeds is a **materially and consistently lower maximum drawdown** than either benchmark, and a **trade-level Profit Factor above 1.0 in every single seed** — the strategy's demonstrated edge is a risk-reduction and consistency effect, not a reliable CAGR-outperformance effect. Any claim that "US strategies beat SPY and QQQ" must be qualified this way going forward.
