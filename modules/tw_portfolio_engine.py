@@ -34,6 +34,7 @@ from modules.transaction_cost import (
     TW_ONE_WAY_COST_BASE,
 )
 from modules.performance_metrics import turnover as calc_turnover
+from modules.trade_ledger import build_trade_ledger
 
 TIER_CONFIGS = {
     "conservative": dict(n_holdings=20, weighting="equal", stop_loss_pct=0.10, max_weight=0.08),
@@ -219,6 +220,9 @@ def run_walk_forward_portfolio(
     step_months: int = 6,
     initial_capital: float = 1_000_000.0,
     min_ic_threshold: float = 0.0,
+    market: str = "TW",
+    tier_configs: Optional[Dict[str, dict]] = None,
+    cost_scenarios: Optional[Dict[str, dict]] = None,
 ) -> dict:
     """
     Full walk-forward, funded portfolio backtest. Each fold's IC weights are
@@ -227,14 +231,22 @@ def run_walk_forward_portfolio(
     end-to-end into ONE continuous DAILY curve. This stitched curve is the
     primary result -- never report an in-sample-fit curve as the headline
     number.
-    """
-    if tier not in TIER_CONFIGS:
-        raise ValueError(f"Unknown tier {tier!r}; use one of {list(TIER_CONFIGS)}")
-    if cost_scenario not in COST_SCENARIOS:
-        raise ValueError(f"Unknown cost_scenario {cost_scenario!r}; use one of {list(COST_SCENARIOS)}")
 
-    tier_cfg = TIER_CONFIGS[tier]
-    cost_cfg = COST_SCENARIOS[cost_scenario]
+    `market`/`tier_configs`/`cost_scenarios` let this SAME function serve a
+    different market (e.g. US) with different tier definitions and cost
+    assumptions, without forking the engine -- pass US_TIER_CONFIGS /
+    US_COST_SCENARIOS from modules/us_portfolio_engine.py for a US run.
+    Defaults to this module's TW configs when not supplied.
+    """
+    tier_configs = tier_configs or TIER_CONFIGS
+    cost_scenarios = cost_scenarios or COST_SCENARIOS
+    if tier not in tier_configs:
+        raise ValueError(f"Unknown tier {tier!r}; use one of {list(tier_configs)}")
+    if cost_scenario not in cost_scenarios:
+        raise ValueError(f"Unknown cost_scenario {cost_scenario!r}; use one of {list(cost_scenarios)}")
+
+    tier_cfg = tier_configs[tier]
+    cost_cfg = cost_scenarios[cost_scenario]
     one_way_cost = cost_cfg["one_way_cost"] + cost_cfg["slippage_bps"] / 10000.0
 
     folds = generate_fold_dates(start, end, is_months, oos_months, step_months)
@@ -249,9 +261,10 @@ def run_walk_forward_portfolio(
     capital = float(initial_capital)
     daily_segments = []  # list of pd.Series (daily equity value), concatenated at the end
     trades = []
+    period_records = []  # per-period weight snapshots, for build_trade_ledger()
     prev_weights = pd.Series(dtype=float)
 
-    for fold in folds:
+    for fold_idx, fold in enumerate(folds):
         is_s, is_e = fold["is_start"], fold["is_end"]
         oos_s, oos_e = fold["oos_start"], fold["oos_end"]
 
@@ -307,6 +320,7 @@ def run_walk_forward_portfolio(
             if daily_mult.empty:
                 continue
 
+            capital_before = capital
             capital_after_cost = capital * (1 - cost_drag)
             period_equity = capital_after_cost * daily_mult
             daily_segments.append(period_equity)
@@ -320,6 +334,12 @@ def run_walk_forward_portfolio(
                 "gross_return": gross_period_return, "cost_drag": cost_drag,
                 "net_return": net_period_return, "pnl": pnl, "status": "closed",
             })
+            period_records.append({
+                "period_index": len(period_records), "fold": fold_idx,
+                "train_start": is_s, "train_end": is_e, "test_start": oos_s, "test_end": oos_e,
+                "signal_date": signal_date, "entry_date": entry_date, "exit_date": exit_date,
+                "weights": weights, "capital_at_entry": capital_before,
+            })
 
             capital = float(period_equity.iloc[-1])
             prev_weights = weights
@@ -329,12 +349,25 @@ def run_walk_forward_portfolio(
 
     equity_curve = pd.concat(daily_segments).sort_index()
     equity_curve = equity_curve[~equity_curve.index.duplicated(keep="last")]
-    trades_df = pd.DataFrame(trades)
+
+    # period_ledger: one row per rebalance PERIOD (portfolio-level aggregate
+    # return). Metrics from this are period-level, e.g. "Positive Rebalance
+    # Period Rate" -- NOT a trade-level win rate. See trade_ledger below for
+    # individual stock-level P&L.
+    period_ledger = pd.DataFrame(trades)
+
+    trade_ledger = build_trade_ledger(
+        market=market, strategy=tier, period_records=period_records,
+        universe_data=universe_data, trading_days=trading_days,
+        stop_loss_pct=tier_cfg.get("stop_loss_pct"), one_way_cost=one_way_cost,
+    )
 
     return {
         "status": "completed",
         "equity_curve": equity_curve,
-        "trades_df": trades_df,
+        "period_ledger": period_ledger,
+        "trades_df": period_ledger,  # back-compat alias; prefer period_ledger/trade_ledger explicitly
+        "trade_ledger": trade_ledger,
         "tier": tier,
         "cost_scenario": cost_scenario,
         "n_folds": len(folds),

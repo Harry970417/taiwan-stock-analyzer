@@ -226,6 +226,14 @@ class TestRunWalkForwardPortfolioSmoke:
         traded = trades[trades["turnover"] > 0]
         assert (traded["cost_drag"] > 0).all()
 
+        # individual stock-level trade ledger present and well-formed
+        from modules.trade_ledger import LEDGER_COLUMNS
+        ledger = result["trade_ledger"]
+        assert list(ledger.columns) == LEDGER_COLUMNS
+        assert len(ledger) > 0
+        assert ledger["market"].eq("TW").all()
+        assert ledger["status"].isin(["closed", "open"]).all()
+
     def test_stress_cost_scenario_never_beats_ideal(self):
         universe_data = _make_synthetic_universe()
         factor_panels, return_panel = _make_synthetic_factor_panels(universe_data)
