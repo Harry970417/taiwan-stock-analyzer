@@ -228,3 +228,49 @@ Covers items 3, 4, 6, 7, 8, and part of 15 from the requested 15-point list. NOT
 | Bootstrap: was the realized MDD a lucky ordering? | Realized period-compounded MDD (-14.57%) sits at the **76.9th percentile** of 1000 randomly-reordered-period simulations (seed=42) — i.e., the actual sequence of returns was somewhat more favorable than a typical random ordering (which would average -17.6%), but not in the extreme tail. Mild, not dramatic, ordering luck. |
 
 **Net assessment:** TW-Conservative-v1's edge is real (survives stock removal, cost stress, and is not concentrated in a single fold), but it is meaningfully front-loaded into the 2019-2021 recovery period, and a non-trivial share of the full-period CAGR depends on one strong year (2023). This should be disclosed as a material caveat alongside the "beats TAIEX on Calmar" framing, not omitted.
+
+---
+
+## 10. Phase 2.5 gate item #2 — tradable vs. adjusted prices
+
+**The concern is legitimate and is addressed here explicitly, not brushed aside.** Every price used throughout this project — signal construction, `entry_price`/`exit_price` in the trade ledger, and every benchmark (0050, TAIEX, SPY, QQQ, equal-weight pools) — comes from `yf.download(..., auto_adjust=True)`. This back-adjusts historical OHLC for both stock splits and cash dividends. The dollar figures recorded as `entry_price`/`exit_price` in `trade_ledger.csv` are therefore **adjusted-basis prices, not the literal as-quoted price that would have printed on the ticker tape that day.**
+
+**Chosen approach (the user's permitted alternative B — "another mathematically equivalent approach that does not double-count dividends"), not approach A (raw OHLC + explicit dividend cashflow):** adjusted prices are used **uniformly** — for the factor signal, the entry fill, the exit fill, and every benchmark alike — and `trade_ledger.dividends_received` is fixed at `0.0` everywhere (§7.6, §8.3). No separate dividend cashflow is ever added on top of an adjusted-price return, so there is no double-count.
+
+**Why this is mathematically equivalent for the numbers this project reports (returns, CAGR, MDD, Sharpe, Calmar, win rate, Profit Factor):** all of these are computed from *ratios/differences of prices*, never from an absolute price level compared against something from a different adjustment basis. Verified empirically in `tests/test_price_adjustment.py` against real AAPL data:
+- **Dividend test:** across AAPL's real 2023-02-10 ex-dividend date ($0.23/share), the gap between the adjusted-price return and the raw-price return equals `dividend / prior_raw_close` to within 2×10⁻⁵ — proving `auto_adjust=True` folds the exact real dividend into the return series, not an approximation.
+- **Split test:** AAPL's real 2020-08-31 4:1 split shows NO artificial jump in the RAW series either (yfinance normalizes splits into both raw and adjusted OHLC by default — only dividend adjustment differs between the two modes) — so split handling requires no extra logic here.
+
+**What this approach does NOT give you, disclosed plainly:** `entry_price`/`exit_price` in the ledger cannot be cross-checked against a real historical quote or broker confirmation for that date — they are on an adjusted basis that shifts every time a new dividend/split occurs after that date (yfinance re-computes the whole adjusted series going forward). Anyone reconciling this backtest against real trade tickets must convert basis first. Position sizing (`shares = allocation / entry_price`) is internally consistent (both entry and exit use the same adjustment basis) so `shares` counts are also on an adjusted basis, not real, literal share counts you'd see in a brokerage account for a position spanning a later split.
+
+**Disposition:** accepted as the project's price convention going forward, backed by the test evidence above — not silently assumed, not rebuilt to raw+explicit-dividend (out of scope given the free-data-source constraints already documented in §8.2).
+
+---
+
+## 11. Phase 2.5 gate item #3 — US universe reconciliation
+
+**The "45-stock" figure previously used to describe the US equal-weight benchmark in chat reporting was WRONG — a copy-paste labeling error carried over from the TW section (which genuinely has 45 stocks).** The actual, correct arithmetic: 50 sampled − 11 failed downloads = **39** usable tickers, and both the strategy and the benchmark used exactly those same 39 throughout — this was already correct in the underlying code and CSV outputs (`usa_results_period_level.csv`, `us_benchmark_comparison.csv`); only the chat-message summary text mislabeled it. Corrected: the benchmark is now `EqualWeightUS_39_no_cost_*` going forward, matching the requirement that a benchmark's name include the actual stock count used.
+
+Full row-level evidence: `exports/tw_us_backtest/audit/us_universe_reconciliation.csv` (`scripts/dev/reconcile_us_universe.py`). All 11 failures cross-checked against Wikipedia's S&P 500 change log:
+
+| Symbol | Removal reason (from S&P 500 change log) |
+|---|---|
+| HAR | Samsung Electronics acquired Harman International (2017-03-16) |
+| MJN | Reckitt Benckiser acquired Mead Johnson Nutrition (2017-06-19) |
+| CSRA | General Dynamics acquired CSRA (2018-04-04) |
+| SRCL | Market capitalization change (2018-12-03) |
+| NFX | ECA (Encana) acquired Newfield Exploration (2019-02-15) |
+| FL | Market capitalization change (2019-08-09) |
+| TSS | Global Payments acquired TSS (2019-09-23) |
+| ADS | Market capitalization change (2020-06-22) |
+| CXO | ConocoPhillips acquired Concho Resources (2021-01-21) |
+| PXD | ExxonMobil acquired Pioneer Natural Resources (2024-05-08) |
+| CTRA | Devon Energy acquired Coterra Energy (2026-05-07) — note: Coterra itself was formed in 2021 from the merger of Cimarex Energy (ticker XEC) and Cabot Oil & Gas; the `CTRA` ticker did not exist for the earlier part of the 2016–2021 study window, so this specific failure is a **ticker-continuity gap**, not solely a fetch failure — exactly the "ticker rename" risk already flagged in §8.3. |
+
+**Direct answers:**
+
+1. **Why doesn't 50−11 equal the previously-reported 45?** It doesn't need to reconcile with 45 — 50−11=39 is correct, and the "45" was this project's own reporting error, now fixed.
+2. **Usable stocks per fold:** all 13 folds show **39/39 usable stocks every day** (`us_per_fold_usable_stocks.csv`) — the 39-ticker universe has no internal missing-data gaps once download-filtered, unlike the raw 50-ticker sample.
+3. **Same investable universe for strategy and benchmark on every date?** Yes — both draw from the identical 39-ticker `universe_data` dict; confirmed no divergence.
+4. **Could TSLA actually enter the backtest after Dec 2020?** No. TSLA was not in the fixed 50-ticker sample (it wasn't an S&P 500 member as of the 2016-08-01 sampling date; it was added 2020-12-21). It was used ONLY as an independent correctness check for `build_pit_sp500_universe()` itself, never as part of the backtest universe.
+5. **Dynamically updated or fixed at research start?** **Fixed.** The 50-ticker sample is drawn ONCE from 2016-08-01 membership and does not change composition as the real S&P 500 adds/removes names during the study window — this is a genuine, disclosed limitation (a true dynamic PIT universe would need per-fold membership updates, not implemented here). This means the backtest is best described as "point-in-time SELECTED, statically HELD," not "continuously point-in-time accurate" throughout the whole 2016–2026 window.
