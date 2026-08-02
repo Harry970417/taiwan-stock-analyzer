@@ -57,6 +57,21 @@ Settlement delay has a negligible effect (≤0.08pp CAGR swing across all three 
 
 The US leg contributes more to the combined CAGR than the TW leg, roughly in proportion to its higher standalone CAGR at an equal weight — **the US-Conservative-v1 leg (itself only "promising but unvalidated") is doing more of the combined portfolio's return-generation work than the TW leg.** This is disclosed explicitly, not hidden behind the combined number: if US-Conservative-v1's multi-seed median (13.16%, not 17.58%) were substituted, the combined CAGR would be correspondingly lower. This report does NOT re-run the combined portfolio on the multi-seed median in this interim version (see §7).
 
+## 3.5 Selection vs. allocation vs. timing/exposure attribution
+
+Per the instruction not to call the same-universe equal-weight gap pure "selection alpha," each leg's strategy-vs-market-exposure gap is decomposed into market exposure (same-universe equal-weight, no cost) → + cost effect → + active management effect (selection+weighting+timing/stop-loss bundled — a full three-way split was not performed, disclosed below):
+
+| Leg | Market exposure CAGR | Cost effect | Active management effect | Strategy CAGR | Market exposure MDD | Strategy MDD |
+|---|---|---|---|---|---|---|
+| TW-Conservative-v1 | 19.37% | -0.74pp | **-7.35pp** | 11.28% | -29.55% | -17.01% |
+| US-Conservative-v1 (deterministic) | 17.07% | -2.45pp | **+2.97pp** | 17.58% | -41.25% | -15.16% |
+
+**Critical, previously-unstated finding: TW-Conservative-v1's active management (stock selection + weighting + monthly timing + 10% stop-loss) actively SUBTRACTS 7.35 percentage points of CAGR** relative to simply holding the same 45-stock universe equally weighted (19.37% → 11.28%). The entire value of the TW strategy is drawdown reduction (MDD improves from -29.55% to -17.01%) — it is, in effect, a **volatility/drawdown-reduction overlay that costs CAGR to buy**, not a stock-picking edge. This reframes the earlier Phase 2.5 framing ("beats TAIEX on Calmar") in starker terms: the trade-off is real and larger than a benchmark-comparison view alone made clear.
+
+US-Conservative-v1's active management effect is positive (+2.97pp) on top of an even larger MDD reduction (-41.25% → -15.16%) — the US leg's active management genuinely adds value beyond passive exposure, though (per the Phase 2.5 gate) this is measured on the deterministic universe / not yet confirmed at the multi-seed median.
+
+**Disclosed limitation:** "active management effect" bundles three distinct mechanisms (which names are picked, how they're weighted, when positions are entered/exited/stopped-out) into one number. Isolating each would require additional intermediate backtest configurations (e.g. equal-weight-of-selected-names-only, no-stop-loss variants) not run here given time constraints.
+
 ## 4. Fair 7-benchmark comparison
 
 Same overlap window, same cost/settlement convention as the formal combined result.
