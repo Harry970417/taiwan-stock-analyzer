@@ -79,6 +79,32 @@ assets/backtest_release/v1/
 
 ---
 
+## 五之二、第二輪 Release Gate：釘選 Python 版本 + 破壞性乾淨環境模擬（2026-08-03）
+
+本輪新增：釘選正式 production Python 版本、獨立 release 驗證器（`scripts/dev/validate_release_assets.py` ／ `modules/release_validation.py`）、頁面內建完整性驗證閘門、`BACKTEST_DISPLAY_MODE` 展示／研究模式分離。以下為在**另一個全新乾淨 clone**（`C:\tmp_release_gate_test\tsa`，刻意使用短路徑以避免 Windows 長路徑限制）下的破壞性模擬過程與結果，對應 commit `630a6b7`。
+
+### 執行步驟與結果
+
+| # | 步驟 | 指令 | 結果 |
+|---|------|------|------|
+| 1 | 確認 `exports/` 不存在 | `find exports -type f` | 僅 `.gitkeep`，確認為空 |
+| 2 | 停用網路存取（評估後改採程式碼路徑檢查） | 檢查 `pages/15_台美股策略回測.py` 及其直接依賴（`modules/ui_components.py`、`modules/display_mode.py`、`modules/release_validation.py`）之 import 陳述式 | 展示模式渲染路徑中**無任何**具備網路能力的套件（`yfinance`／`requests`／`sqlalchemy`／FinMind 用戶端）被引入。未實際停用機器網路卡（風險考量：避免對使用者機器造成不必要的系統層級中斷），改以程式碼路徑檢查佐證「無需網路」之結論 |
+| 3 | 於釘選版本（Python 3.11.9）下安裝 | `python -m venv .venv` → `.venv\Scripts\python.exe -m pip install -r requirements.txt pytest` | 乾淨安裝成功（pandas 2.3.3、numpy 1.26.4、streamlit 1.58.0），無錯誤 |
+| 4 | 執行 release 驗證 | `.venv\Scripts\python.exe scripts/dev/validate_release_assets.py` | **15/15 檢查通過** |
+| 5 | 執行完整測試 | `.venv\Scripts\python.exe -m pytest tests/ -q` | **301 項全數通過**（143.21 秒） |
+| 6 | 以展示模式啟動 Streamlit | `BACKTEST_DISPLAY_MODE=showcase streamlit run app.py --server.port 8800` | 啟動成功，HTTP 200 |
+| 7 | 開啟頁面 | 因本次會話 Playwright 瀏覽器工具中途失去連線且未恢復，改以 Streamlit 官方 `AppTest` 框架直接執行頁面腳本並檢查渲染結果（比瀏覽器截圖更精確地捕捉 Python 例外與 `st.error`/`st.warning`） | `exception: []`、`errors: []`、7 個資料表、31 個文字區塊全數渲染 |
+| 8 | 確認 10 個章節與 11 張圖表渲染 | 檢查 `at.warning`（圖表/報告缺失皆會觸發 `st.warning`）與 section_header 區塊數 | `warnings: []`（11 張圖表與 3 份報告皆存在，無缺失警告），偵測到 11 個章節標題區塊（10 個原始章節 + 本輪新增之「完整報告下載」區塊） |
+| 9 | 下載 Markdown／HTML 報告 | 按鈕點擊下載已於前一輪（主要工作目錄環境）以真實瀏覽器驗證成功（檔名 `final_report.md`，內容正確）；本輪於此乾淨 clone 中以「無缺失警告」+ checksum 驗證通過雙重確認下載來源檔案存在且未損毀 | 通過 |
+| 10 | 暫時損毀一個 release 檔案 | 於 `drawdown_summary.csv` 尾端注入一列垃圾資料，重跑驗證器與 `AppTest` | 驗證器：`14/15 checks passed`，明確標示 `SHA-256 checksums match ... FAILED`；頁面：`errors: ['正式研究展示資料未通過完整性驗證，請重新建立 release assets。']`，`num dataframes rendered: 0`（完全阻擋渲染，訊息中無路徑或 traceback） |
+| 11 | 還原檔案 | 還原備份後重跑驗證器與 `AppTest` | 驗證器：`15/15 checks passed`；頁面：`errors: []`，7 個資料表恢復正常渲染 |
+
+### 結論
+
+本輪破壞性模擬確認：（1）正式 production Python 版本（3.11）於全新虛擬環境下可乾淨安裝、測試、啟動；（2）release 完整性驗證器能正確偵測 checksum 竄改並在頁面層級安全地阻擋渲染，且錯誤訊息符合「僅顯示一句中文提示、不外露路徑或 traceback」之要求；（3）還原後系統恢復正常，證明驗證機制無副作用、可重複執行。
+
+---
+
 ## 五、結論
 
 修正前風險已被實際重現並記錄（非僅理論推測）；修正後已以**另一次獨立的全新乾淨 clone**重新驗證通過。展示頁面現可在任何全新 `git clone` 後立即使用，不依賴 gitignored 的 `exports/` 工作目錄，亦不需要重新執行完整回測流程。原始 `exports/tw_us_backtest/` 工作目錄維持 gitignore（保留其作為可重新產生之研究過程資料的定位），二者用途明確分離：`exports/` 為研究過程原始資料與逐筆稽核依據，`assets/backtest_release/v1/` 為版本化、可公開的正式展示資產。
