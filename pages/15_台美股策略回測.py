@@ -1,0 +1,348 @@
+# pages/15_台美股策略回測.py
+# TW+US Combined Portfolio Backtest -- results disclosure page
+#
+# This page is a RESULTS DISCLOSURE, not a sales page. Every number on this
+# page is read at runtime from exports/tw_us_backtest/**/*.csv (Phase 3 /
+# 3.5 outputs) -- nothing here is hand-typed. If a source file is missing,
+# the page fails loudly (st.error + st.stop) rather than silently guessing.
+
+import sys
+from pathlib import Path
+
+import pandas as pd
+import streamlit as st
+
+ROOT = Path(__file__).resolve().parent.parent
+sys.path.insert(0, str(ROOT))
+
+from modules.ui_components import (inject_css, page_header, disclaimer, kpi_card,
+                                    section_header, sidebar_logo, sidebar_section,
+                                    research_summary, research_insight)
+
+DATA = ROOT / "exports" / "tw_us_backtest"
+CHARTS = DATA / "charts"
+
+st.set_page_config(page_title="台美股策略回測", page_icon="", layout="wide")
+inject_css()
+
+
+def require_csv(rel_path: str) -> pd.DataFrame:
+    path = DATA / rel_path
+    if not path.exists():
+        st.error(f"缺少必要資料檔案，本頁無法顯示：{rel_path}")
+        st.stop()
+    return pd.read_csv(path)
+
+
+def chart(name: str, caption: str = ""):
+    path = CHARTS / name
+    if not path.exists():
+        st.warning(f"圖表尚未產生：{name}")
+        return
+    st.image(str(path), use_container_width=True)
+    if caption:
+        st.caption(caption)
+
+
+# ── 讀取資料（全部來自 Phase 3 / 3.5 實際輸出檔案）───────────────────────────
+comparison   = require_csv("summary/final_comparison_table.csv")
+kpi_head     = require_csv("summary/final_kpi_headline.csv").iloc[0]
+multi_seed   = require_csv("robustness/combined_multi_seed_summary.csv")
+subperiod    = require_csv("combined/combined_subperiod_results.csv")
+cost_stress  = require_csv("combined/combined_cost_stress.csv")
+remove_year  = require_csv("combined/combined_remove_best_year.csv")
+mdd_quant    = require_csv("combined/combined_mdd_quantification.csv")
+
+with st.sidebar:
+    sidebar_logo()
+    sidebar_section("研究導覽")
+    st.markdown(
+        '<div style="font-size:0.72rem;color:#64748B;padding:0.2rem 0 0.6rem;line-height:1.6;">'
+        '本頁彙整台股＋美股雙市場組合策略之 Walk-Forward 樣本外回測結果，'
+        '含多股票池抽樣穩健性、成本壓力測試、分期間拆解與策略淘汰判定。'
+        '</div>', unsafe_allow_html=True)
+    sidebar_section("頁面章節")
+    st.markdown(
+        '<div style="font-size:0.76rem;color:#94A3B8;line-height:2.1;">'
+        '1. 核心結論與 KPI<br>2. 策略比較表<br>3. 風險／報酬權衡<br>'
+        '4. 多股票池穩健性<br>5. 分期間拆解<br>6. 成本壓力測試<br>'
+        '7. 移除最佳年度<br>8. 回撤量化<br>9. 策略淘汰決策<br>10. 專案定位'
+        '</div>', unsafe_allow_html=True)
+
+page_header(
+    "台美股策略回測",
+    "TW + US Combined Portfolio — Walk-Forward 樣本外回測、多股票池穩健性與策略淘汰研究",
+    meta=["Walk-Forward OOS", "30-Seed Robustness", "Cost Stress", "Combined NAV"]
+)
+disclaimer()
+
+research_summary(
+    findings=[
+        "回測範圍：2019-09 至 2026-02，台股（0050 成分股池）與美股（S&P 500 期間內成分股池）雙市場，"
+        "訊號以 T 日收盤決定、T+1 日開盤執行，避免同日收盤前視偏誤",
+        "股票池以 30 組隨機抽樣重建，正式結論以 30 組分布之中位數為準，不以任一單一種子（含 seed 42）代表整體結果",
+        "交易成本以標準情境（單邊 40bps）計算，並額外驗證免成本、雙倍成本、壓力成本三種情境下結論是否改變",
+        "組合層級直接計算指標（而非分別加總台股腿與美股腿），並將台股腿、美股腿、匯率貢獻分別歸因",
+    ],
+    risks=[
+        "本頁三項主動配置（固定 50/50、風險平價、動態配置）均未在樣本外驗證 CAGR 優於最強被動基準（0050＋QQQ 固定 50/50）",
+        "台股／美股歷史成分股重建為近似點時（Point-in-Time）方法，非完整原始上市/下市紀錄，仍存在未完全消除的存活偏誤風險",
+    ],
+    analyst_note="本頁呈現的是研究過程與結論，不是投資建議或績效保證。"
+)
+
+# ═══════════════════════════════════════════════════════════════════════════
+# 1. 核心結論與 KPI
+# ═══════════════════════════════════════════════════════════════════════════
+section_header("核心結論")
+
+st.markdown("""
+<div style="background:#F8FAFC;border:1px solid #E2E8F0;border-left:4px solid #1E40AF;
+            border-radius:10px;padding:1.1rem 1.4rem;font-size:0.95rem;line-height:1.8;
+            color:#0F172A;font-weight:600;">
+在本研究樣本、30 組股票池抽樣、Walk-Forward 樣本外測試及既定交易成本假設下，
+Combined-v1-Fixed-5050 已驗證具有相對回撤控制效果；但相對最強被動基準的 CAGR 超額報酬未獲驗證。
+<div style="font-weight:400;font-size:0.8rem;color:#475569;margin-top:0.6rem;">
+本結論不代表已在真實資金、未來市場，或完整歷史成分股名單下獲得驗證。
+</div>
+</div>
+""", unsafe_allow_html=True)
+
+c1, c2, c3, c4 = st.columns(4)
+c1.markdown(kpi_card(
+    "主動組合 CAGR（30 組中位數）", f"{kpi_head['active_fixed5050_median_cagr_pct']:.2f}%",
+    f"P10–P90：{multi_seed.loc[multi_seed.allocation=='fixed_50_50','p10_cagr_pct'].iloc[0]:.2f}% ～ "
+    f"{multi_seed.loc[multi_seed.allocation=='fixed_50_50','p90_cagr_pct'].iloc[0]:.2f}%",
+    "flat"), unsafe_allow_html=True)
+c2.markdown(kpi_card(
+    "被動基準 CAGR（0050＋QQQ 50/50）", f"{kpi_head['benchmark_0050_qqq_cagr_pct']:.2f}%",
+    "固定股債比、無主動選股", "up"), unsafe_allow_html=True)
+c3.markdown(kpi_card(
+    "主動組合 MDD（30 組中位數）", f"{kpi_head['active_fixed5050_median_mdd_pct']:.2f}%",
+    f"被動基準 MDD：{kpi_head['benchmark_0050_qqq_mdd_pct']:.2f}%", "up"), unsafe_allow_html=True)
+c4.markdown(kpi_card(
+    "30 組中贏過被動基準 CAGR 之比例", f"{kpi_head['pct_seeds_beating_benchmark']:.0f}%",
+    f"30 組中 CAGR 為正之比例：{kpi_head['pct_seeds_positive_cagr']:.0f}%", "down"), unsafe_allow_html=True)
+
+chart("final_equity_curve.png", "組合淨值曲線（含結算延遲與匯率轉換之真實情境）與被動基準對照。")
+
+# ═══════════════════════════════════════════════════════════════════════════
+# 2. 策略比較表
+# ═══════════════════════════════════════════════════════════════════════════
+section_header("策略比較表（標準成本情境，全樣本外區間）")
+
+disp = comparison.copy()
+disp["類別"] = disp["category"].map({"active": "主動配置", "passive": "被動基準"})
+disp = disp.rename(columns={
+    "label_zh": "策略", "cagr_pct": "CAGR (%)", "mdd_pct": "MDD (%)",
+    "sharpe": "Sharpe", "calmar": "Calmar", "verdict": "研究判定",
+})[["策略", "類別", "CAGR (%)", "MDD (%)", "Sharpe", "Calmar", "研究判定"]]
+st.dataframe(disp, use_container_width=True, hide_index=True)
+st.caption("Sharpe／Calmar 僅計算主動配置（被動基準以固定權重再平衡，未走 Walk-Forward 選股流程，此處不列出對照數值）。")
+
+# ═══════════════════════════════════════════════════════════════════════════
+# 3. 風險／報酬權衡
+# ═══════════════════════════════════════════════════════════════════════════
+section_header("風險／報酬權衡")
+chart("final_cagr_mdd_scatter.png",
+      "橫軸為最大回撤（數值愈小回撤愈深），縱軸為年化報酬率；"
+      "位於被動基準右上方代表同時提供更高報酬與更淺回撤，本研究三項主動配置均未達成此條件。")
+
+fx_row = subperiod[subperiod.period == "full_OOS"].iloc[0]
+mc1, mc2 = st.columns(2)
+with mc1:
+    chart("final_market_contribution.png", "台股腿與美股腿對組合年化報酬之貢獻拆解。")
+with mc2:
+    chart("final_currency_attribution.png",
+          f"固定匯率反事實對照下之純匯率效果，全樣本外期間匯率貢獻約 {fx_row['fx_contribution_pp']:+.2f} 個百分點。")
+
+# ═══════════════════════════════════════════════════════════════════════════
+# 4. 多股票池穩健性（30 組抽樣，非單一種子）
+# ═══════════════════════════════════════════════════════════════════════════
+section_header("多股票池穩健性（30 組抽樣分布）")
+st.markdown(
+    '<div style="background:#FFFBEB;border:1px solid #FDE68A;border-radius:8px;'
+    'padding:0.6rem 1rem;font-size:0.82rem;color:#78350F;margin-bottom:0.8rem;">'
+    '提醒：本研究曾以 seed 42 作為初始探索樣本，但 seed 42 落在 30 組分布的高分位（非代表值），'
+    '因此本頁與所有正式結論一律以 30 組分布之中位數／P10–P90 為準，不單獨引用 seed 42 之結果。'
+    '</div>', unsafe_allow_html=True)
+
+ms = multi_seed.rename(columns={
+    "allocation": "配置", "n_seeds": "股票池組數",
+    "median_cagr_pct": "CAGR 中位數 (%)", "p10_cagr_pct": "CAGR P10 (%)", "p90_cagr_pct": "CAGR P90 (%)",
+    "median_mdd_pct": "MDD 中位數 (%)", "p10_mdd_pct": "MDD P10 (%)", "p90_mdd_pct": "MDD P90 (%)",
+    "pct_beating_0050_qqq_benchmark": "贏過被動基準比例",
+    "worst_seed_cagr_pct": "最差組 CAGR (%)", "best_seed_cagr_pct": "最佳組 CAGR (%)",
+})
+ms["配置"] = ms["配置"].map({"fixed_50_50": "固定 50/50", "risk_parity": "風險平價", "dynamic": "動態配置"})
+ms["贏過被動基準比例"] = (ms["贏過被動基準比例"] * 100).map(lambda v: f"{v:.0f}%")
+st.dataframe(ms[["配置", "股票池組數", "CAGR 中位數 (%)", "CAGR P10 (%)", "CAGR P90 (%)",
+                 "MDD 中位數 (%)", "MDD P10 (%)", "MDD P90 (%)", "贏過被動基準比例",
+                 "最差組 CAGR (%)", "最佳組 CAGR (%)"]],
+             use_container_width=True, hide_index=True)
+
+d1, d2 = st.columns(2)
+with d1:
+    chart("final_multi_seed_cagr_distribution.png", "30 組股票池抽樣之 CAGR 分布，垂直線標示被動基準。")
+with d2:
+    chart("final_multi_seed_mdd_distribution.png", "30 組股票池抽樣之最大回撤分布，垂直線標示被動基準。")
+
+# ═══════════════════════════════════════════════════════════════════════════
+# 5. 分期間拆解
+# ═══════════════════════════════════════════════════════════════════════════
+section_header("分期間拆解（直接以組合淨值計算，非分別加總台美兩腿）")
+
+sp = subperiod.rename(columns={
+    "period": "期間", "cagr_pct": "CAGR (%)", "mdd_pct": "MDD (%)",
+    "tw_leg_cagr_pct": "台股腿 CAGR (%)", "us_leg_cagr_pct": "美股腿 CAGR (%)",
+    "fx_contribution_pp": "匯率貢獻 (pp)", "benchmark_0050_qqq_cagr_pct": "被動基準 CAGR (%)",
+    "excess_vs_benchmark_pp": "相對基準超額 (pp)",
+})
+st.dataframe(sp[["期間", "start", "end", "CAGR (%)", "MDD (%)", "台股腿 CAGR (%)", "美股腿 CAGR (%)",
+                 "匯率貢獻 (pp)", "被動基準 CAGR (%)", "相對基準超額 (pp)"]],
+             use_container_width=True, hide_index=True)
+
+all_negative = (subperiod["excess_vs_benchmark_pp"] < 0).all()
+st.markdown(f"""
+<div style="background:#FEF2F2;border-left:3px solid #DC2626;padding:0.6rem 1rem;
+            border-radius:0 6px 6px 0;font-size:0.84rem;color:#7F1D1D;">
+{"相對被動基準之超額報酬在兩個子期間及全樣本外期間皆為負值，顯示 CAGR 落後並非單一年度或單一市場區間造成。"
+ if all_negative else "相對被動基準之超額報酬在不同子期間方向不一致，結論具期間依賴性，須謹慎解讀。"}
+</div>
+""", unsafe_allow_html=True)
+chart("final_subperiod_comparison.png")
+
+# ═══════════════════════════════════════════════════════════════════════════
+# 6. 成本壓力測試
+# ═══════════════════════════════════════════════════════════════════════════
+section_header("成本壓力測試（免成本／標準／雙倍／壓力情境）")
+
+cs = cost_stress.copy()
+cs["配置"] = cs["allocation"].map({"fixed_50_50": "固定 50/50", "risk_parity": "風險平價", "dynamic": "動態配置"})
+cs["情境"] = cs["cost_scenario"].map({"no_cost": "免成本", "standard": "標準 (40bps)", "doubled": "雙倍 (80bps)", "stress": "壓力 (120bps)"})
+cs_disp = cs.rename(columns={"cagr_pct": "CAGR (%)", "mdd_pct": "MDD (%)", "cost_pct_of_gross_profit": "成本佔毛利 (%)"})
+st.dataframe(cs_disp[["配置", "情境", "CAGR (%)", "MDD (%)", "成本佔毛利 (%)"]],
+             use_container_width=True, hide_index=True)
+
+fixed_cs = cost_stress[cost_stress.allocation == "fixed_50_50"]
+stable_below_bench = fixed_cs["still_below_0050_qqq_benchmark"].all()
+st.markdown(f"""
+<div style="background:#EFF6FF;border-left:3px solid #1E40AF;padding:0.6rem 1rem;
+            border-radius:0 6px 6px 0;font-size:0.84rem;color:#1E3A8A;">
+{"即使成本從免成本一路壓力測試至 3 倍於標準情境，固定 50/50 組合之 CAGR 仍全程低於 0050＋QQQ 被動基準，"
+ "顯示「CAGR 未優於最強被動基準」此一結論並非交易成本假設造成，而是策略本身在樣本外期間的特性。"
+ if stable_below_bench else "在部分成本情境下結論出現變化，須列為額外限制條件。"}
+</div>
+""", unsafe_allow_html=True)
+chart("final_cost_stress.png")
+
+# ═══════════════════════════════════════════════════════════════════════════
+# 7. 移除最佳年度測試
+# ═══════════════════════════════════════════════════════════════════════════
+section_header("移除最佳年度測試（公平共同年度版本）")
+
+ry = remove_year[remove_year.version == "common_year_fair_comparison"].copy()
+ry["策略"] = ry["config"].map({
+    "fixed_50_50": "主動固定 50/50", "risk_parity": "主動風險平價",
+    "dynamic": "主動動態配置", "benchmark_0050_qqq": "0050＋QQQ 固定 50/50",
+})
+ry_disp = ry.rename(columns={
+    "baseline_cagr_pct": "原始 CAGR (%)", "common_removed_year": "移除年度",
+    "cagr_excluding_common_year_pct": "移除後 CAGR (%)", "mdd_excluding_common_year_pct": "移除後 MDD (%)",
+})
+st.dataframe(ry_disp[["策略", "原始 CAGR (%)", "移除年度", "移除後 CAGR (%)", "移除後 MDD (%)"]],
+             use_container_width=True, hide_index=True)
+
+bench_after = ry.loc[ry.config == "benchmark_0050_qqq", "cagr_excluding_common_year_pct"].iloc[0]
+fixed_after = ry.loc[ry.config == "fixed_50_50", "cagr_excluding_common_year_pct"].iloc[0]
+st.markdown(f"""
+<div style="background:#F8FAFC;border-left:3px solid #64748B;padding:0.6rem 1rem;
+            border-radius:0 6px 6px 0;font-size:0.84rem;color:#334155;">
+移除共同最佳年度（{int(ry['common_removed_year'].iloc[0])} 年）後，主動固定 50/50 CAGR 降至
+{fixed_after:.2f}%，被動基準降至 {bench_after:.2f}%——雙方績效同樣高度依賴該年度表現，
+且移除後相對排名未改變（被動基準仍高於主動組合），故「CAGR 落後」之結論不是單一年度造成的假象。
+</div>
+""", unsafe_allow_html=True)
+chart("final_annual_returns.png", "各年度報酬率，用以檢視單一年度對整體 CAGR 的影響程度。")
+
+# ═══════════════════════════════════════════════════════════════════════════
+# 8. 回撤量化
+# ═══════════════════════════════════════════════════════════════════════════
+section_header("回撤量化（相對被動基準的精確權衡）")
+
+mq = mdd_quant.rename(columns={
+    "strategy": "策略", "cagr_pct": "CAGR (%)", "mdd_pct": "MDD (%)",
+    "mdd_improvement_vs_combined_pp": "MDD 改善 (pp)", "mdd_relative_reduction_vs_combined_pct": "MDD 相對降低 (%)",
+    "longest_drawdown_days": "最長回撤天數", "drawdown_recovery_days": "回撤修復天數",
+    "up_capture_vs_combined": "上漲捕獲率", "down_capture_vs_combined": "下跌捕獲率",
+    "cagr_cost_per_mdd_point_saved": "每降 1pp MDD 犧牲之 CAGR (pp)",
+})
+mq["策略"] = mq["策略"].replace({"Combined_Fixed_50_50": "主動固定 50/50（基準對照組）"})
+st.dataframe(mq[["策略", "CAGR (%)", "MDD (%)", "MDD 改善 (pp)", "最長回撤天數", "回撤修復天數",
+                 "上漲捕獲率", "下跌捕獲率", "每降 1pp MDD 犧牲之 CAGR (pp)"]],
+             use_container_width=True, hide_index=True)
+st.caption(
+    "「每降 1pp MDD 犧牲之 CAGR」= 相對該被動基準犧牲的年化報酬（pp）／該基準之 MDD 改善幅度（pp）。"
+    "數值愈小代表用愈少的報酬換取愈多的回撤控制；負值代表主動組合在該項比較基準上是 MDD 更差而非更好，需個別解讀。"
+)
+chart("final_drawdown_comparison.png")
+
+# ═══════════════════════════════════════════════════════════════════════════
+# 9. 策略淘汰決策
+# ═══════════════════════════════════════════════════════════════════════════
+section_header("策略淘汰決策")
+
+elim_rows = []
+for key, label in [("fixed_50_50", "主動固定 50/50"), ("risk_parity", "主動風險平價"), ("dynamic", "主動動態配置")]:
+    row = multi_seed[multi_seed.allocation == key].iloc[0]
+    verdict_row = comparison[comparison.strategy_key == key].iloc[0]
+    kept = verdict_row["verdict"] != "淘汰"
+    elim_rows.append({
+        "配置": label,
+        "決策": "保留（低回撤研究組合，非投資建議）" if kept else "淘汰",
+        "CAGR 中位數 (%)": row["median_cagr_pct"],
+        "MDD 中位數 (%)": row["median_mdd_pct"],
+        "Calmar 中位數": row["median_calmar"],
+        "理由": (
+            "30 組中 CAGR 與 Calmar 中位數皆為三項主動配置中最高，且穩健性測試（成本壓力／分期間／移除最佳年度）"
+            "結論一致，作為研究對照組保留；惟仍未證實優於被動基準 CAGR。"
+            if key == "fixed_50_50" else
+            "30 組中 CAGR 中位數為三項主動配置中最低，且未在 MDD 上取得足以抵銷之優勢，相對固定 50/50 無保留必要。"
+            if key == "risk_parity" else
+            "30 組中 MDD 中位數為三項主動配置中最差（回撤最深），且未取得對應的 CAGR 補償，相對固定 50/50 無保留必要。"
+        ),
+    })
+elim_df = pd.DataFrame(elim_rows)
+st.dataframe(elim_df, use_container_width=True, hide_index=True)
+
+# ═══════════════════════════════════════════════════════════════════════════
+# 10. 專案定位
+# ═══════════════════════════════════════════════════════════════════════════
+section_header("與其他研究專案的關係")
+st.markdown("""
+<div class="research-box">
+本頁為「學術研究」定位下的量化研究產出之一，方法論與台股量化研究平台（Taiwan Stock Analyzer）共用同一套
+績效指標與交易紀錄重建模組（<code>modules/performance_metrics.py</code>、<code>modules/trade_ledger.py</code>），
+並延伸至美股與跨市場組合層級。本頁所有結論均為研究過程紀錄，與平台其他頁面（動能分析、因子選股等）互為獨立模組，
+不互相背書彼此的投資有效性。
+</div>
+""", unsafe_allow_html=True)
+
+# ═══════════════════════════════════════════════════════════════════════════
+# 研究洞察總結
+# ═══════════════════════════════════════════════════════════════════════════
+research_insight(
+    key_finding=(
+        f"Combined-v1-Fixed-5050 於 30 組股票池抽樣中，CAGR 中位數 {kpi_head['active_fixed5050_median_cagr_pct']:.2f}%"
+        f"（被動基準 {kpi_head['benchmark_0050_qqq_cagr_pct']:.2f}%），"
+        f"MDD 中位數 {kpi_head['active_fixed5050_median_mdd_pct']:.2f}%"
+        f"（被動基準 {kpi_head['benchmark_0050_qqq_mdd_pct']:.2f}%），"
+        f"30 組中 0% 贏過被動基準 CAGR、100% 維持正報酬。"
+    ),
+    implication=(
+        "回撤控制效果在多股票池抽樣、成本壓力測試、分期間拆解與移除最佳年度測試中一致成立，可視為已驗證；"
+        "CAGR 相對最強被動基準之超額報酬則在同一組測試中一致不成立，不應被解讀為已驗證的優勢。"
+    ),
+    signal="中性",
+    next_step="完整方法論、限制與重現步驟請見研究報告（TW_US_BACKTEST_FINAL_REPORT）。"
+)

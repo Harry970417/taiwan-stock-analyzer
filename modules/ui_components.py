@@ -39,6 +39,9 @@ html, body, [class*="css"] {
     background-color: var(--bg) !important;
     -webkit-font-smoothing: antialiased;
 }
+[data-testid="stMarkdownContainer"], [data-testid="stMarkdownContainer"] * {
+    font-family: 'Inter', 'Noto Sans TC', -apple-system, BlinkMacSystemFont, sans-serif !important;
+}
 .block-container {
     padding-top: 1.75rem !important;
     padding-bottom: 3.5rem !important;
