@@ -95,7 +95,7 @@
 | **DS-1** | 多重比較未校正（6 因子 × 3 假說，FWER ≈ 26%）| `chapter5_summary.json` | 🔴 | 📋 | ⚠️ Mitigated：Phase A 加入 Holm-Bonferroni（power 優於 Bonferroni）；Phase 2 Full Market 需 FDR(BH) | `results/data/ic_summary_all_factors.csv`：p_holm 欄位 |
 | **DS-2** | J=6 排列檢定統計功效極低（720 排列）| `scripts/run_chapter5_results.py:419` | 🟡 | ✅ Resolved | Phase 1 H1 改為 Fama-MacBeth，不再依賴排列數 | `modules/fama_macbeth.py` |
 | **DS-3** | UI 允許使用者在看到結果後選擇最優策略 | `app.py:54–60` | 🟡 | 📋 | 🔲 Pending：UI 研究工具與研究管線已分離；Phase 2 UI 加入警告說明 | Phase 2 任務 |
-| **DS-4** | UI 的 ICIR×√T 與論文 NW HAC 並存（統計輸出不一致）| `cross_sectional_ic.py` vs `run_chapter5_results.py` | 🟡 | ✅ Resolved | `modules/stats_utils.py` 統一所有 NW HAC 計算，消除 ARCH-1/DS-4 | `modules/stats_utils.py`；29 tests |
+| **DS-4** | UI 的 ICIR×√T 與論文 NW HAC 並存（統計輸出不一致）| `cross_sectional_ic.py` vs `run_chapter5_results.py` | 🟡 | ✅ Resolved | `modules/stats_utils.py` 統一所有 NW HAC 計算，部分緩解 ARCH-1/DS-4 | `modules/stats_utils.py`；29 tests |
 
 ### 2.6 Reproducibility（REP 系列）
 
@@ -129,7 +129,7 @@
 
 | Issue ID | 問題 | 位置 | Severity | Status | Phase 1 Resolution | Evidence |
 |---|---|---|---|---|---|---|
-| **ARCH-1** | 論文腳本與 UI 使用不同 t-stat 計算 | 多處 | 🔴 | ✅ Resolved | `modules/stats_utils.py` 統一所有 NW HAC，所有研究模組改呼叫 `stats_utils.nw_tstat()` | 29 tests |
+| **ARCH-1** | 論文腳本與 UI 使用不同 t-stat 計算 | 多處 | 🔴 | ⚠️ Mitigated（範圍有限，見下方三、C3）| `modules/stats_utils.py` 統一所有 NW HAC，**但僅涵蓋 Phase 1 companion 模組**（`fama_macbeth.py`／`event_window.py`／`market_cap_stratify.py`／`walk_forward.py`）；論文實際產出腳本 `scripts/run_chapter5_results.py` 仍為獨立實作，尚未改用 `stats_utils.nw_tstat()` | 29 tests |
 | **ARCH-2** | SQL injection 漏洞（ticker 直接插入表名）| `utils/data_fetcher.py:79,88` | 🔴 | ✅ Resolved | `_sanitize_ticker()` 白名單驗證（2026-06-19）| `utils/data_fetcher.py` |
 | **ARCH-3** | `ResearchPipeline` 違反單一職責原則 | `modules/research_pipeline.py` | 🟡 | 📋 | 🔲 Pending：Phase 2 任務（Phase 1 研究管線已不依賴此模組）| — |
 | **ARCH-4** | `predictor.py` 含空 for 迴圈（dead code）| `modules/predictor.py:295–299` | 🟡 | 📋 | 🔲 Pending：Phase 2 任務 | — |
@@ -177,6 +177,23 @@ DS-2:   Fama-MacBeth 取代排列檢定
 DS-4:   stats_utils.py 統一（同 ARCH-1）
 UT-2:   test_stats_utils.py 29 個測試
 ```
+
+---
+
+## 三、PROJECT_AUDIT_2026.md 工程/文件審查追蹤（獨立軌道）
+
+來源：`PROJECT_AUDIT_2026.md`（2026-07-02 全庫審查）+ `PROJECT_REMEDIATION_PLAN.md`
+詳細逐項紀錄：[PROJECT_REMEDIATION_LOG.md](../PROJECT_REMEDIATION_LOG.md)
+
+| Issue ID | 問題 | Severity | Status | Wave | Evidence |
+|---|---|---|---|---|---|
+| **C1** | Ch1/Ch2 先導數據與 Ch4-6 鎖定結果矛盾（不同資料池） | 🔴 Critical | ✅ Resolved（文字揭露，未改動數字/結論）| Wave 1 | `thesis/chapter1_研究背景與動機.md`、`thesis/chapter2_文獻探討.md` 新增註腳 |
+| **C5** | `universe_pit.py` `apply_pit_filter_to_panel()` NameError 死碼 | 🔴 Critical | ✅ Resolved | Wave 1 | `modules/universe_pit.py` 新增 `import numpy as np` |
+| **C10** | Dockerfile 無 `.dockerignore`，`.env` 有被打包風險 | 🔴 Critical | ✅ Resolved | Wave 1 | `.dockerignore`（新建）|
+| **C8**（文件揭露子項）| `requirements.txt` 版本鎖定與實際執行環境不符，未交叉引用 | 🔴 Critical | ⚠️ Mitigated（僅文件揭露，版本對齊與重跑驗證留待 Tier A）| Wave 1 | `requirements.txt`、`environment.yml` 新增揭露註解 |
+| **C15**（含 H11, H31）| `backup_before_merge/`、底線腳本已被 git 追蹤 | 🔴 Critical | ✅ Resolved（工作目錄已清理，待使用者確認後 commit）| Wave 1 | `scripts/dev/`（新建）|
+| **C3**（含 C12）| `scripts/run_chapter5_results.py` 未使用 `stats_utils.py`，上方 ARCH-1「Resolved」標記僅適用於 Phase 1 companion 模組，**未涵蓋論文實際產出腳本** | 🔴 Critical | 🔲 Pending（Tier A，本輪未處理）| — | 詳見 `PROJECT_AUDIT_2026.md` C3 |
+| GitHub PAT/Token 相關 | — | — | ⏭️ 使用者指示本輪排除，不納入追蹤 | — | — |
 
 ---
 

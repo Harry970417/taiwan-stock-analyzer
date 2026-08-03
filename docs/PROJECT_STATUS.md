@@ -24,6 +24,14 @@ Phase 1   ████████░░░░░░░░░░░░   42%
 
 ---
 
+## PROJECT_AUDIT_2026.md 修正進度（獨立追蹤軌）
+
+> 此軌道追蹤 `PROJECT_AUDIT_2026.md`／`PROJECT_REMEDIATION_PLAN.md` 的全庫工程/文件修正，與下方「Phase 狀態」（Full Market Run 進度）為**兩條獨立軌道**，互不影響。詳細逐項紀錄見 [PROJECT_REMEDIATION_LOG.md](../PROJECT_REMEDIATION_LOG.md)。
+
+**Tier S Wave 1（2026-07-02）**：5 項完成（C1、C5、C10、C8-文件揭露子項、C15），皆未觸碰 H1–H3 鎖定結果，未重跑實驗，未 commit。GitHub PAT/Token 相關項目本輪排除。
+
+---
+
 ## Phase 狀態
 
 ### Phase 0 — V1 Prototype（IC-Portfolio Divergence）

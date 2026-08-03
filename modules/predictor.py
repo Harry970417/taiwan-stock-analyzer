@@ -293,10 +293,6 @@ def combined_predict(df: pd.DataFrame) -> dict:
     rf_acc = None
 
     try:
-        for target in ["label_1d", "label_3d", "label_5d"]:
-            if target not in df_feat.columns:
-                continue
-
         model, importance_df, acc, feat_cols = train_random_forest(df_feat, "label_1d")
         rf_result = rf_predict(model, df_feat, feat_cols)
         rf_importance = importance_df

@@ -8,6 +8,21 @@
 
 ---
 
+## PROJECT_AUDIT_2026.md 修正軌道（獨立於下方 Full Market Run 阻塞點）
+
+> 下方「行動 #1-3」屬 Full Market Run（N≥500 研究）軌道，與 `PROJECT_AUDIT_2026.md` 的全庫工程/文件修正是**兩條獨立工作**，互不阻塞。
+
+**Tier S Wave 1（2026-07-02）已完成**：C1、C5、C10、C8-文件揭露子項、C15（詳見 [PROJECT_REMEDIATION_LOG.md](../PROJECT_REMEDIATION_LOG.md)）。
+
+**Tier S Wave 2 建議**（下次執行）：
+1. C7 — 新增 `.github/workflows/test.yml`，push/PR 時自動跑 `pytest tests/`（~90 分鐘，零風險）
+2. H7/H8/H9 — 更新本文件與 `docs/roadmap.md`／`docs/refactor_history.md`／`docs/DAILY_PROGRESS.md` 中過期的測試數字（36→160）（~2.5 小時，零風險）
+3. C18 — 刪除 `{data,strategies,utils,exports}` 誤植目錄（1 分鐘）
+
+以上三項均為文件/CI 層級操作，不涉及論文內容、統計邏輯或鎖定結果。
+
+---
+
 ## 當前阻塞點
 
 V1 Pilot 已跑完（N=16，T=1283），所有統計結果已產生。
@@ -15,28 +30,13 @@ V1 Pilot 已跑完（N=16，T=1283），所有統計結果已產生。
 
 ---
 
-## ⬜ 行動 #1（立即執行）
+## ✅ 已完成：`tabulate` 依賴問題
 
-### `pip install tabulate` — 修正 run_phase1_execute.py 崩潰
-
-**為什麼最優先？**
-`results/phase1_run.log` 顯示 `run_phase1_execute.py` 因缺少 `tabulate` 套件而崩潰，導致 Markdown 結果摘要未能輸出。這是一個 10 秒可以修正的阻塞問題，不修正會讓日後每次重跑都崩在同一個地方。
-
-**執行指令**：
-```bash
-pip install tabulate
-python scripts/run_phase1_execute.py --universe v1
-```
-
-**完成標準**：`run_phase1_execute.py` 執行完畢，在 `results/H1/H1_summary.md` 等檔案中看到格式正確的 Markdown 表格（目前 H1-H4 摘要已存在，確認表格內容正確即可）。
-
-**預估時間**：15 分鐘
-**解決的 Reviewer Comment**：RC-10（計算過程不透明）
-**對應 Priority**：Tier S — S-11（主管線完整執行）
+`run_phase1_execute.py` 崩潰問題已於 Phase A 解決——改用 pandas 直接格式化，移除 `tabulate` 依賴（見 `docs/REVIEWER_TRACKER.md` NEW-1：✅ Resolved）。原「行動 #1」已過期並移除，以下遞補為 #1、#2。
 
 ---
 
-## ⬜ 行動 #2（本週執行）
+## ⬜ 行動 #1（本週執行）
 
 ### `S-2`：確定 Phase 1 Full Market 股票池清單
 
@@ -70,7 +70,7 @@ Full Market Run 的所有後續工作（資料下載 D2-D9、Phase 1 主要統�
 
 ---
 
-## ⬜ 行動 #3（下週執行，與 #2 完成後開始）
+## ⬜ 行動 #2（下週執行，與 #1 完成後開始）
 
 ### `D2 + D6`：下載 5 年 OHLCV + TWII
 

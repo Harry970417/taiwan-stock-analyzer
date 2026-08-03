@@ -113,6 +113,44 @@ Phase 1 基礎設施在一天內完成，遠超預期。V1 Pilot Run 的結果�
 
 ---
 
+## 2026-07-02（PROJECT_AUDIT_2026.md Tier S Wave 1）
+
+**今日完成事項**：
+
+獨立於上方 Phase 1 Full Market 軌道，依 `PROJECT_AUDIT_2026.md`／`PROJECT_REMEDIATION_PLAN.md` 執行第一波 Tier S 修正（5 項，GitHub PAT/Token 相關項目排除）：
+
+1. C1：`thesis/chapter1_研究背景與動機.md`、`thesis/chapter2_文獻探討.md` 各插入一段補充註腳，說明先導實證數據與第四至六章鎖定樣本分屬不同資料池，不改動任何既有句子/數字/結論。
+2. C10：新增 `.dockerignore`，排除 `.env*` 等，避免 Docker build context 打包機密與非必要檔案。
+3. C5：`modules/universe_pit.py` 補上 `import numpy as np`，修正 `apply_pit_filter_to_panel()` 的必定 NameError 死碼（此函式目前仍未被任何 pipeline 呼叫）。
+4. C8（文件揭露子項）：`requirements.txt`／`environment.yml` 各新增指向 `reproducibility_manifest.md` 的版本衝突揭露註解，不改動版本鎖定範圍。
+5. C15：刪除 `backup_before_merge/`（過期重複內容），`_check_data.py`／`_preflight.py`／`_verify_token.py` 移至 `scripts/dev/` 並新增用途說明。
+
+詳細紀錄見 [PROJECT_REMEDIATION_LOG.md](../PROJECT_REMEDIATION_LOG.md)。
+
+**修改檔案**：`thesis/chapter1_研究背景與動機.md`、`thesis/chapter2_文獻探討.md`、`.dockerignore`（新建）、`modules/universe_pit.py`、`requirements.txt`、`environment.yml`、`scripts/dev/`（新建，含 3 支移入腳本 + README）；刪除 `backup_before_merge/`、`_check_data.py`、`_preflight.py`、`_verify_token.py`。
+
+**pytest 結果**：
+```
+pytest tests/ -q
+160 passed in 59.62s（與修正前完全一致，無回歸）
+```
+
+**compileall 結果**：
+```
+python -m compileall -q modules utils validators strategies pages scripts app.py run_phase1.py
+OK（無語法錯誤）
+```
+
+**今日心得**：
+
+本輪全為低風險機械式修正，未觸碰任何鎖定結果或統計邏輯。過程中發現 `requirements.txt`／`environment.yml` 已有先前 session 留下、尚未 commit 的變更（移除了原本的版本衝突警語），依 `AGENTS.md` 規則未回退，改以新增方式補回揭露。所有變更均未 commit，等待使用者確認。
+
+**明日目標**：
+
+依 `PROJECT_REMEDIATION_PLAN.md`，下一波建議處理 C7（CI/CD 建立）與 H7/H8/H9（`roadmap.md`／`refactor_history.md`／本文件／`NEXT_ACTION.md` 測試數字過期），皆為零風險機械式修正，不涉及論文內容或研究邏輯。
+
+---
+
 ## 記錄模板（複製貼上使用）
 
 ```markdown
