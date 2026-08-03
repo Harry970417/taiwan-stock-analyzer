@@ -54,17 +54,34 @@ def build_combined_calendar(tw_dates, us_dates) -> pd.DataFrame:
     )
 
 
-def fetch_usdtwd_fx(start: str, end: str) -> pd.Series:
+def fetch_usdtwd_fx(start: str, end: str, retries: int = 3) -> pd.Series:
     """
     Daily USD/TWD close (1 USD = N TWD), forward-filled to cover every
     calendar day in range (FX trades ~24/5; a daily bar's absence on a
     given date is a data gap, not a genuine "market closed with no
     rate" state -- ffill is the correct treatment here, unlike ffilling
     an equity that's genuinely halted).
+
+    Retries on empty response -- yfinance intermittently returns an
+    empty frame under load (observed during this project's development),
+    which must not be silently treated as "FX flat at 0"; callers should
+    still check the result isn't empty before use.
     """
+    import time
+
     import yfinance as yf
 
-    raw = yf.Ticker("USDTWD=X").history(start=start, end=end)
+    for attempt in range(retries):
+        try:
+            raw = yf.Ticker("USDTWD=X").history(start=start, end=end)
+            if not raw.empty:
+                break
+        except Exception:
+            pass
+        if attempt < retries - 1:
+            time.sleep(2)
+    else:
+        return pd.Series(dtype=float)
     if raw.empty:
         return pd.Series(dtype=float)
     px = raw["Close"]
