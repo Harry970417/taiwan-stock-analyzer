@@ -11,9 +11,9 @@
 
 | 項目 | 當前值 | 備注 |
 |------|--------|------|
-| Python | 3.14.5 | |
-| pandas | 3.0.3 | ⚠️ 超出 requirements.txt 上限 `<3.0`，存在版本衝突記錄 |
-| numpy | 2.4.6 | ⚠️ 超出 requirements.txt 上限 `<2.0`，存在版本衝突記錄 |
+| Python | 3.14.5（本機互動式開發環境；**非**支援的 production 版本，見下方 2026-08-03 更新） | |
+| pandas | 3.0.3（於 3.14.5 環境下）；於已釘選之 Python 3.11 環境下為 2.3.3 | ⚠️ 於 Python 3.14 下超出 requirements.txt 上限 `<3.0`，於 Python 3.11 下無此問題 |
+| numpy | 2.4.6（於 3.14.5 環境下）；於已釘選之 Python 3.11 環境下為 1.26.4 | ⚠️ 於 Python 3.14 下超出 requirements.txt 上限 `<2.0`，於 Python 3.11 下無此問題 |
 | yfinance | 1.4.1 | API 格式歷史上多次改變，版本差異影響資料輸出 |
 | scipy | 1.17.1 | |
 | scikit-learn | 未精確記錄 | Phase 1 補完 |
@@ -59,7 +59,7 @@
 |---|------|---------|------|
 | 1 | Survivorship bias：16 檔均為現存股票，未納入下市標的 | 🔴 Critical | Acknowledged |
 | 2 | 無離線資料快照機制 | 🔴 Critical | Acknowledged |
-| 3 | 套件版本衝突（pandas/numpy 超出 requirements.txt 上限）| 🔴 Critical | Acknowledged |
+| 3 | 套件版本衝突（pandas/numpy 超出 requirements.txt 上限）| 🟡 Major | **Resolved for production**（2026-08-03：正式 production runtime 已釘選為 Python 3.11，見 `.python-version`／`runtime.txt`／`Dockerfile`；已於全新虛擬環境驗證 `pip install -r requirements.txt`、`pytest tests/`（252 通過）、`streamlit run app.py` 皆成功，無需放寬任何版本上限。本機互動式開發仍使用 Python 3.14，該版本明確**不受支援**於全新環境重現，詳見 `docs/DEPLOYMENT_READINESS_PHASE4.md`）|
 | 4 | SQL injection 防護缺失（`data_fetcher.py`）| 🔴 Critical | **Mitigated**（2026-06-19 修正）|
 | 5 | ffill 無上限，財報數據可能無限延伸 | 🟡 Major | **Mitigated**（2026-06-19 加入 limit=90）|
 | 6 | UI 與論文腳本使用不同 t-stat 計算方法 | 🟡 Major | Acknowledged（Phase 1 統一）|

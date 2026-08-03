@@ -1,14 +1,21 @@
 # requirements.txt — Taiwan Stock Factor Analyzer (Phase 1)
-# Updated: 2026-06-19 | Platform: Windows 11 | Python 3.11 mainline
+# Updated: 2026-08-03 | Platform: Windows 11 | Python 3.11 (pinned production runtime)
 #
-# Recommended runtime: Python 3.11.x. Version ranges below align with
-# pyproject.toml and keep pandas<3 / numpy<2 for reproducible research runs.
+# SUPPORTED runtime: Python 3.11.x (matches .python-version, runtime.txt,
+# Dockerfile). Verified 2026-08-03 in a brand-new virtual environment:
+# `pip install -r requirements.txt` installs cleanly (pandas 2.3.3, numpy
+# 1.26.4), `pytest tests/` passes all 252 tests, `streamlit run app.py`
+# serves correctly. Python 3.12 also verified clean as a fallback.
 #
-# ⚠️ Known version conflict: the environment that actually produced
-# results/metadata.json (Python 3.14.5, pandas 3.0.3, numpy 2.4.6) exceeds
-# the caps below. This is tracked as a Critical/Acknowledged item in
-# reproducibility_manifest.md — see that file before assuming a fresh
-# install reproduces results/ bit-for-bit.
+# UNSUPPORTED: Python 3.14. numpy<2.0 has no prebuilt wheel for 3.14 and
+# will attempt a from-source build requiring a C/C++ toolchain (meson +
+# a compiler) that is not present on this machine, causing `pip install`
+# to fail outright. The environment that produced results/metadata.json
+# (Python 3.14.5, pandas 3.0.3, numpy 2.4.6) was a local interactive-dev
+# environment with those packages already present system-wide, NOT a
+# `pip install -r requirements.txt` from this file on that Python version.
+# Do not deploy on Python 3.14. See docs/DEPLOYMENT_READINESS_PHASE4.md
+# and reproducibility_manifest.md item #3 for the full history.
 #
 # Install: pip install -r requirements.txt
 # Reproduce exactly: pip install --no-deps -r requirements.txt

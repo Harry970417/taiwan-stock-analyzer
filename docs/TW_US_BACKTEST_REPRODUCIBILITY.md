@@ -1,5 +1,13 @@
 # 台美股策略回測 — 重現步驟
 
+## 執行環境（Python 版本）
+
+**支援版本：Python 3.11**（與 `.python-version`、`runtime.txt`、`Dockerfile`、`pyproject.toml` 一致）。已於全新虛擬環境驗證：`pip install -r requirements.txt` 乾淨安裝、`pytest tests/`（252 項通過）、`streamlit run app.py` 正常啟動並可完整渲染本頁面。Python 3.12 亦驗證可行，作為備援選項。
+
+**不支援：Python 3.14。** `requirements.txt` 釘選 `numpy<2.0`，該版本在 Python 3.14 上無預編譯 wheel，會嘗試原始碼編譯，需要本機沒有的 C/C++ 編譯器，導致 `pip install` 直接失敗。本機互動式開發環境使用 Python 3.14（因系統已預先安裝相容套件而非透過本檔案安裝），**不代表**此版本適合用於全新環境重現或部署。完整細節見 `docs/DEPLOYMENT_READINESS_PHASE4.md` 與 `reproducibility_manifest.md` 第 3 項。
+
+---
+
 本文件列出重現本研究所有結果所需的執行順序。所有腳本皆位於 `scripts/dev/`，輸出至 `exports/tw_us_backtest/`（已加入 `.gitignore`，不隨版本控制推送）。執行前請先安裝專案相依套件並確認可存取 FinMind／yfinance 等資料來源。
 
 ## 0. 前置：單元測試

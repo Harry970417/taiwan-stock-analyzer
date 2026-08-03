@@ -147,11 +147,22 @@ for p in sorted(RELEASE.rglob("*")):
 
 manifest = {
     "release": "backtest_release/v1",
+    "release_version": "v1",
     "generated_at_utc": datetime.now(timezone.utc).isoformat(timespec="seconds"),
     "source_commit": commit,
     "source_sample_window": "2019-09-03 to 2026-02-02",
     "cost_convention": "standard, one-way 40bps (see cost_stress_summary.csv for no-cost/doubled/stress scenarios)",
     "robustness_basis": "30 independent random universe-sampling seeds; formal conclusions use the median/P10-P90 distribution, not any single seed (including seed 42)",
+    # Structured, machine-checkable fields (validate_release_assets.py depends on these
+    # exact keys/values -- keep in sync with any change to the robustness methodology).
+    "primary_result_type": "multi_seed_median",
+    "random_seed_count": 30,
+    "seed_42_is_primary": False,
+    "primary_strategy_key": "fixed_50_50",
+    "primary_strategy_label": "Combined-v1-Fixed-5050",
+    "primary_benchmark_key": "0050_QQQ_fixed_50_50",
+    "eliminated_strategy_keys": ["risk_parity", "dynamic"],
+    "retained_strategy_keys": ["fixed_50_50"],
     "formal_verdict": (
         "Combined-v1-Fixed-5050 has demonstrated a relative drawdown-control effect under this "
         "study's sample, 30-universe-sample robustness set, Walk-Forward out-of-sample testing, "

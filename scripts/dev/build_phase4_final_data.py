@@ -89,13 +89,22 @@ multi_seed_summary = require(ROOT / "exports" / "tw_us_backtest" / "robustness" 
 fixed_row = multi_seed_summary[multi_seed_summary["allocation"] == "fixed_50_50"].iloc[0]
 bench_row = df[df["strategy_key"] == "0050_QQQ_fixed_50_50"].iloc[0]
 
+# Both headline percentages are derived directly from the per-seed distribution
+# (not copied from a 0-1 fraction column, not hardcoded) so this file's units are
+# consistently 0-100 throughout -- caught by the release integrity gate, which
+# checks percentage-unit consistency across every release CSV.
+per_seed = require(ROOT / "exports" / "tw_us_backtest" / "robustness" / "combined_multi_seed_distribution.csv")
+per_seed_fixed = per_seed[per_seed["allocation"] == "fixed_50_50"]
+pct_beating_benchmark = per_seed_fixed["beats_benchmark"].mean() * 100
+pct_positive_cagr = (per_seed_fixed["cagr_pct"] > 0).mean() * 100
+
 kpi = pd.DataFrame([{
     "active_fixed5050_median_cagr_pct": fixed_row["median_cagr_pct"],
     "active_fixed5050_median_mdd_pct": fixed_row["median_mdd_pct"],
     "benchmark_0050_qqq_cagr_pct": bench_row["cagr_pct"],
     "benchmark_0050_qqq_mdd_pct": bench_row["mdd_pct"],
-    "pct_seeds_beating_benchmark": fixed_row["pct_beating_0050_qqq_benchmark"],
-    "pct_seeds_positive_cagr": 100.0,  # worst_seed_positive True for all 3 configs, confirmed in Phase3 report sec 4.5
+    "pct_seeds_beating_benchmark": pct_beating_benchmark,
+    "pct_seeds_positive_cagr": pct_positive_cagr,
     "worst_seed_cagr_pct": fixed_row["worst_seed_cagr_pct"],
     "best_seed_cagr_pct": fixed_row["best_seed_cagr_pct"],
 }])
