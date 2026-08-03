@@ -132,7 +132,17 @@ Per the stated decision priority (no leakage > multi-seed stability > MDD reduct
 - **Simplicity:** Fixed 50/50 wins decisively — it is the simplest scheme AND the best performer, a rare case where simplicity and performance agree.
 - **CAGR (last priority):** Fixed 50/50 leads the other two schemes but trails every simple passive benchmark tested.
 
-**Formal status: Combined-v1-Fixed-5050 = promising but unvalidated on CAGR-outperformance (same status class as US-Conservative-v1 alone); validated on drawdown-reduction.** It is NOT recommended as a return-generation strategy relative to simply holding 0050+QQQ 50/50. Its only demonstrated, robust value is volatility/drawdown control, and that value should be weighed against the ~9-12pp/year of foregone CAGR (§4.5) it costs to obtain. Risk parity and dynamic allocation add complexity without adding value and are not recommended over Fixed 50/50.
+**Formal status: Combined-v1-Fixed-5050 = promising but unvalidated on CAGR-outperformance (same status class as US-Conservative-v1 alone); validated on drawdown-reduction.**
+
+**Unambiguous statement of the finding (stated twice, in both languages, specifically to prevent the misreading risk identified in review):**
+
+> **EN:** Combined-v1-Fixed-5050 did **NOT** beat 0050+QQQ 50/50 on CAGR in any of the 30 tested seeds. The passive benchmark remains the better-returning option. The active combined portfolio's only currently-robust value is lower maximum drawdown and reduced performance variance across different stock-pool samples — **not** higher or "enhanced" returns.
+>
+> **中文：** Combined-v1-Fixed-5050 **未**在 CAGR 上超越 0050＋QQQ 50/50，被動基準仍是報酬表現較好的方案。主動組合目前唯一較穩健的價值，是降低最大回撤與縮小不同股票池抽樣造成的績效波動，**不是**更高或「提升」的報酬。
+
+Forbidden phrasing for this finding, per review: "優於被動基準" / "打敗基準" / "創造超額報酬" / "已驗證高報酬" / "beats the passive benchmark" / "outperforms" — none of these describe what was found, and must not be used anywhere this result is summarized (reports, dashboard, chart captions).
+
+Its only demonstrated, robust value is volatility/drawdown control, and that value should be weighed against the ~9-12pp/year of foregone CAGR (§4.5) it costs to obtain. Risk parity and dynamic allocation add complexity without adding value and are not recommended over Fixed 50/50.
 
 ## 7. What remains (explicitly not done, not silently skipped)
 
