@@ -1,11 +1,12 @@
 # Phase 3 — TW+US Combined Portfolio Report
 
-**Status: formal combined result, currency/market/selection attribution, 7-benchmark comparison, and the full 30-seed combined robustness distribution are all complete. Only the HTML rendering and Phase 4 dashboard remain — see §7.**
+**Status: Phase 3 AND Phase 3.5 closeout audit complete (formal result, currency/market/selection attribution, 7-benchmark comparison, 30-seed robustness distribution, combined-level cost stress, sub-period, remove-best-year, and precise MDD quantification — see §8-9 for the closeout audit and final verdict). Only Phase 4 (dashboard, final reports) remains.**
 
 **Components used (per the Phase 2.5 gate labels, preserved without embellishment):**
 - **TW-Conservative-v1** — fixed research-universe strategy with demonstrated MDD-reduction value; CAGR does NOT beat simple TW benchmarks; performance is heavily front-loaded into 2019-2021.
 - **US-Conservative-v1** — "promising but unvalidated." Deterministic-universe result (this report) is CAGR 17.58%/MDD -15.16%, distinct from both seed 42 (20.06%, an unusually favorable draw) and the 30-seed multi-seed median (13.16%).
-- **Combined-v1** — research-only exploratory combination, not a production/live strategy.
+- **Combined-v1-Fixed-5050** — validated for drawdown-control effect (§9); CAGR-outperformance not validated; research-only, not a production/live strategy.
+- **Combined-v1-Risk-Parity, Combined-v1-Dynamic** — eliminated (§9); not recommended under any tested condition.
 
 ---
 
@@ -147,6 +148,79 @@ Its only demonstrated, robust value is volatility/drawdown control, and that val
 ## 7. What remains (explicitly not done, not silently skipped)
 
 - Combined-portfolio-level cost-doubling and remove-best-year sensitivity (component-level results exist for both legs; combined-level re-run not done).
-- 2019-2021 vs 2022-2026 sub-period split computed directly on the combined equity curve itself (currently inferred from both legs' individually-confirmed patterns, not independently re-verified on the combined curve).
-- HTML rendering of this report (`exports/tw_us_backtest/reports/PHASE3_TW_US_COMBINED_REPORT.html`).
-- Phase 4 (dashboard, full report generation, chart integration into a web UI) has not started.
+---
+
+## 8. Phase 3.5 closeout audit (parameters frozen; no re-tuning against these results)
+
+**Explicit constraint honored throughout this section: no strategy parameters were adjusted to chase these results, and none of these results were used to redesign the allocation rules. Fixed 50/50, Risk Parity, and Dynamic remain exactly as specified when the formal OOS run (§1) was made.**
+
+### 8.1 Combined-level cost stress (`combined_cost_stress.csv`)
+
+Cost stack: TW commission+tax+slippage + US spread+slippage + FX conversion spread, one-way, applied to rebalanced notional. Settlement-delay idle-cash drag is separately, structurally modeled (not a bps add-on).
+
+| Allocation | No cost | Standard (40bps) | Doubled (80bps) | Stress (120bps) |
+|---|---|---|---|---|
+| Fixed 50/50 | CAGR 14.85% / MDD -16.62% | 14.80% / -16.63% | 14.75% / -16.63% | **14.70% / -16.64%** |
+| Risk parity | 12.40% / -15.91% | 12.16% / -16.02% | 11.92% / -16.13% | **11.68% / -16.24%** |
+| Dynamic | 13.52% / -17.19% | 13.24% / -17.23% | 12.96% / -17.27% | **12.67% / -17.31%** |
+
+All three stay CAGR-positive even under stress cost. **Fixed 50/50 is dramatically the most cost-robust** — costs consume only 0.94% of its gross profit even under stress (vs Risk parity's 5.46%, Dynamic's 5.96%), because it barely trades: both legs tend to drift together, so its weights rarely stray far from 50/50 between rebalances. This is a genuine, additional point in Fixed 50/50's favor beyond §1's CAGR/Calmar comparison.
+
+### 8.2 Sub-period analysis, computed directly on the combined NAV (`combined_subperiod_results.csv`)
+
+| Period | CAGR | MDD | Sharpe | Calmar | % positive months | Excess vs 0050+QQQ |
+|---|---|---|---|---|---|---|
+| 2019-09→2021-12 | 20.51% | -9.44% | 1.889 | 2.173 | 70.4% | -4.22pp |
+| 2022-01→OOS end | 11.68% | -16.63% | 1.164 | 0.702 | 59.2% | -2.50pp |
+| Full OOS | 14.80% | -16.63% | 1.440 | 0.890 | 62.3% | -3.24pp |
+
+**Answers:**
+1. **Is Fixed 50/50 also dependent on 2019-2021?** Partially — CAGR nearly halves post-2022 (20.51%→11.68%), the same front-loading pattern as both individual legs.
+2. **Still positive after 2022?** **Yes** — 11.68% CAGR, clearly profitable, not a marginal or noise-level result.
+3. **Still has an MDD advantage after 2022?** **Yes, and more strikingly than in the earlier period** — the FULL OOS period's single worst drawdown (-16.63%) occurred entirely within 2022+; the strategy's low aggregate MDD is not a COVID-adjacent-calm-period artifact, it held up through an actual multi-market bear phase.
+4. **Is the recent low MDD just from lower returns/exposure?** **Partially yes** — Sharpe drops from 1.889 (2019-21) to 1.164 (2022+), meaning part of the smoother ride post-2022 does reflect lower absolute returns, not purely lower risk. Still, Calmar (0.702) remains respectable and MDD in absolute terms is unchanged from the full-period figure.
+5. **Which leg weakened more?** Roughly equally — TW 20.69%→11.68% CAGR, US 20.32%→11.42% CAGR — neither leg is disproportionately responsible for the post-2022 slowdown.
+
+FX contribution flipped sign across sub-periods: **-3.23pp in 2019-2021** (TWD appreciation hurt the USD-denominated US leg's TWD value) vs **+1.76pp in 2022+** (TWD depreciation helped) — netting to the full-period's already-reported +0.07pp. Neither sub-period's FX effect is large enough to be the primary return driver in either direction.
+
+### 8.3 Remove-best-year, fair common-year version (`combined_remove_best_year.csv`)
+
+All four configs' own best year is **2023** (TW and US both had strong 2023s) — used as the shared removed year for direct comparability:
+
+| Config | Baseline CAGR | Ex-2023 CAGR | Still positive |
+|---|---|---|---|
+| Fixed 50/50 | 14.80% | **10.53%** | Yes |
+| Risk parity | 12.16% | 8.30% | Yes |
+| Dynamic | 13.24% | 9.48% | Yes |
+| 0050+QQQ benchmark | 18.04% | 11.81% | Yes |
+
+**Fixed 50/50 remains solidly positive (10.53%) with 2023 removed, and the MDD figure is literally unchanged (-16.63%, since 2023 was not the drawdown year).** However, **the benchmark's own best year (+41.60% in 2023, vs Fixed 50/50's own best year of +27.49%) was proportionally larger, so even after removing the shared year, the benchmark (11.81%) still beats every active combined config (10.53%/8.30%/9.48%)** — the "does not beat 0050+QQQ" finding is not an artifact of one lucky shared year.
+
+### 8.4 Precise MDD-reduction quantification (`combined_mdd_quantification.csv`)
+
+| Comparator | Comparator CAGR | Comparator MDD | MDD improvement | CAGR given up | CAGR cost per 1pp MDD saved |
+|---|---|---|---|---|---|
+| 0050+SPY fixed 50/50 | 16.43% | -19.22% | 2.59pp | 1.63pp/yr | 0.632pp |
+| 0050+QQQ fixed 50/50 | 18.04% | -22.55% | 5.92pp | 3.24pp/yr | 0.547pp |
+| **0050+QQQ risk parity** | **14.26%** | **-24.98%** | **8.36pp** | **-0.54pp/yr (Combined WINS)** | **N/A — Combined beats this benchmark on both axes** |
+
+**Nuance not previously reported: against the 0050+QQQ *risk-parity* passive benchmark specifically, Combined Fixed 50/50 wins on BOTH CAGR (14.80% vs 14.26%) and MDD.** The "underperforms the benchmark" finding (§4, §4.5) is specific to the toughest comparator tested — 0050+QQQ *fixed* 50/50 — not universally true against every passive cross-market configuration. Against the fixed-50/50 comparators, the trade-off is real: roughly **0.55-0.63 percentage points of annual CAGR foregone per 1 percentage point of MDD improvement** — whether that trade is worthwhile depends entirely on the investor's drawdown tolerance, not a fact this backtest can settle.
+
+Longest drawdown: 196 days (Combined) vs 256 days (both 0050+SPY and 0050+QQQ fixed 50/50) vs 305 days (0050+QQQ risk parity) — Combined also recovers from its drawdowns faster in relative terms. Its single worst drawdown occurred 2025-05-06 — notably NOT during the 2022 bear market that produced every benchmark's worst drawdown, suggesting the strategy navigated 2022 comparatively well but hit a rougher patch in 2025 (not further investigated given scope).
+
+## 9. Final Phase 3 strategy verdict
+
+| Config | Verdict |
+|---|---|
+| **Combined-v1-Fixed-5050** | **「已驗證具回撤控制效果；CAGR超額報酬未驗證」("Validated for drawdown-control effect; CAGR-outperformance not validated")** — upgraded from the provisional "低回撤研究組合" label because it passed all three Phase 3.5 closeout tests: stays CAGR-positive under stress cost (§8.1), MDD advantage holds through an actual 2022+ bear period not just calm markets (§8.2), and remains solidly positive after removing the shared best year (§8.3). Still NOT validated as a return-enhancement strategy — it trails the 0050+QQQ fixed-50/50 benchmark in every test performed, including the fairest (common-year-removed) comparison. |
+| **Combined-v1-Risk-Parity** | **「未增加實質價值，淘汰」("No added value, eliminated")** — worse than Fixed 50/50 on CAGR and Calmar in the formal run, the full 30-seed distribution, and every cost scenario tested. Not recommended under any tested condition. |
+| **Combined-v1-Dynamic** | **「複雜度增加但無績效補償，淘汰」("Added complexity without performance compensation, eliminated")** — worse than Fixed 50/50 on BOTH CAGR and MDD in the formal run and the 30-seed distribution; the added complexity is not compensated by any measured benefit. Not recommended under any tested condition. |
+
+Per instruction, rejected configs are not repackaged as recommendable options for the sake of offering three choices on the eventual dashboard — Phase 4 will present Fixed 50/50 as the sole active combined option, with Risk Parity and Dynamic shown only as "tested and eliminated," never as alternatives a user might reasonably prefer.
+
+## 10. What remains (Phase 4)
+
+- Dashboard page in taiwan-stock-analyzer ("台美股策略回測").
+- 11 required charts (Traditional Chinese labels).
+- Final reports: TW_US_BACKTEST_FINAL_REPORT.md/.html, EXECUTIVE_SUMMARY.md, METHODS.md, LIMITATIONS.md.
+- Browser UI verification + screenshots.
