@@ -1,0 +1,7 @@
+﻿strategy_key,label_zh,cagr_pct,mdd_pct,sharpe,calmar,verdict,category,cagr_rank,mdd_rank
+0050_QQQ_fixed_50_50,0050＋QQQ 固定 50/50,18.04,-22.55,,,比較基準,passive,1,5
+0050_SPY_fixed_50_50,0050＋SPY 固定 50/50,16.43,-19.22,,,比較基準,passive,2,4
+fixed_50_50,主動固定 50/50,14.8,-16.63,1.44,0.89,保留（低回撤研究組合）,active,3,2
+0050_QQQ_risk_parity,0050＋QQQ 風險平價,14.26,-24.98,,,比較基準,passive,4,6
+dynamic,主動動態配置,13.24,-17.23,1.289,0.768,淘汰,active,5,3
+risk_parity,主動風險平價,12.16,-16.02,1.221,0.759,淘汰,active,6,1

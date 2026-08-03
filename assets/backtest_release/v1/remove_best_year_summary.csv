@@ -1,0 +1,9 @@
+﻿config,best_year,best_year_return_pct,baseline_cagr_pct,cagr_excluding_own_best_year_pct,mdd_excluding_own_best_year_pct,version,common_removed_year,cagr_excluding_common_year_pct,mdd_excluding_common_year_pct
+fixed_50_50,2023.0,27.49,14.8,10.53,-16.63,own_best_year,,,
+risk_parity,2023.0,25.2,12.16,8.3,-16.02,own_best_year,,,
+dynamic,2023.0,24.2,13.24,9.48,-17.23,own_best_year,,,
+benchmark_0050_qqq,2023.0,41.6,18.04,11.81,-26.18,own_best_year,,,
+fixed_50_50,,,14.8,,,common_year_fair_comparison,2023.0,10.53,-16.63
+risk_parity,,,12.16,,,common_year_fair_comparison,2023.0,8.3,-16.02
+dynamic,,,13.24,,,common_year_fair_comparison,2023.0,9.48,-17.23
+benchmark_0050_qqq,,,18.04,,,common_year_fair_comparison,2023.0,11.81,-26.18

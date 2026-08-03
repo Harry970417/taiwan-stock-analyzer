@@ -1,0 +1,127 @@
+{
+  "release": "backtest_release/v1",
+  "generated_at_utc": "2026-08-03T08:25:14+00:00",
+  "source_commit": "9c8d23f7d56d6c6a307eae2ed768b91ea34dd3bb",
+  "source_sample_window": "2019-09-03 to 2026-02-02",
+  "cost_convention": "standard, one-way 40bps (see cost_stress_summary.csv for no-cost/doubled/stress scenarios)",
+  "robustness_basis": "30 independent random universe-sampling seeds; formal conclusions use the median/P10-P90 distribution, not any single seed (including seed 42)",
+  "formal_verdict": "Combined-v1-Fixed-5050 has demonstrated a relative drawdown-control effect under this study's sample, 30-universe-sample robustness set, Walk-Forward out-of-sample testing, and stated transaction-cost assumptions; its CAGR outperformance versus the strongest passive benchmark is not validated. This does not imply validation against real capital, future markets, or a complete historical constituent universe.",
+  "not_for_investment_use": true,
+  "files": [
+    {
+      "path": "annual_returns.csv",
+      "bytes": 223,
+      "sha256": "08f0f1c2acc1bfabe19b2e025788f07130ffc6d6e2845ea6afc8a8672b1db466"
+    },
+    {
+      "path": "charts/final_annual_returns.png",
+      "bytes": 45180,
+      "sha256": "fe04a6c4b0d39d3b01cc338d9bd4595de07b31dcacc89cae254270aa609b9b0e"
+    },
+    {
+      "path": "charts/final_cagr_mdd_scatter.png",
+      "bytes": 122016,
+      "sha256": "4f26224a1b4ce5b3c418bea0388d6950aef3841f13eadfba6aa1d58f5988f2e0"
+    },
+    {
+      "path": "charts/final_cost_stress.png",
+      "bytes": 68845,
+      "sha256": "2f32fc743fc8f3f3e49c6f9c89abaffafa5de0f1d65e2f57302700ecd3e31066"
+    },
+    {
+      "path": "charts/final_currency_attribution.png",
+      "bytes": 46733,
+      "sha256": "81b13bf0adaf4e29f86ec517303faddcc1ef80c153f8fac2b78eb8d095ea1a66"
+    },
+    {
+      "path": "charts/final_drawdown_comparison.png",
+      "bytes": 175469,
+      "sha256": "d22a605289c3951d07e69cef1366cb8b57234ed66391f5320261a52fcd18eda0"
+    },
+    {
+      "path": "charts/final_equity_curve.png",
+      "bytes": 124516,
+      "sha256": "7af509f365b791783fe269cb14cb89caade1ecc6c9d19e84049c73f70cc3d1e5"
+    },
+    {
+      "path": "charts/final_market_contribution.png",
+      "bytes": 46846,
+      "sha256": "0502d0bd2b624bb88c6128831980be2806514858db9e3d98c51b184308d32116"
+    },
+    {
+      "path": "charts/final_monthly_return_heatmap.png",
+      "bytes": 111888,
+      "sha256": "d4413f2e574f3ecdfe40db6493b9b8de08a0f6556b1c3ad2ee36bb2ac26a9754"
+    },
+    {
+      "path": "charts/final_multi_seed_cagr_distribution.png",
+      "bytes": 60883,
+      "sha256": "5f8b9c1866df70fc1598a4bbb0ba7d1382f2cb8be8326ca6f2c835acff1046ad"
+    },
+    {
+      "path": "charts/final_multi_seed_mdd_distribution.png",
+      "bytes": 54830,
+      "sha256": "e344629839615db6f3bcee015423cf2caeab09933ffb13383873969e07c2ea31"
+    },
+    {
+      "path": "charts/final_subperiod_comparison.png",
+      "bytes": 72091,
+      "sha256": "f882e656e0111140b07f85aa8a4cd4e17ad7987dee392cd706d95c2a71e3b705"
+    },
+    {
+      "path": "core_metrics.csv",
+      "bytes": 263,
+      "sha256": "361089cdaad8962e2beb8fd9095734b53563ec1ffa6e222759ce469241649a8b"
+    },
+    {
+      "path": "cost_stress_summary.csv",
+      "bytes": 1436,
+      "sha256": "6cd38c7deec368dd8d67a3d1d27fd12535bb9ec4cbceadd8e9e1413a2196db30"
+    },
+    {
+      "path": "drawdown_summary.csv",
+      "bytes": 617,
+      "sha256": "7866672d55c10e4f433ffcb8eea9e184bdfbef5ed1a53f6f872e7f0e5825d76b"
+    },
+    {
+      "path": "monthly_returns.csv",
+      "bytes": 2132,
+      "sha256": "9a3da8ec6bc4a272e6f58c856519f9e022504ecb34bdb9824db53135c4955d41"
+    },
+    {
+      "path": "multi_seed_summary.csv",
+      "bytes": 510,
+      "sha256": "0e1918a056831abaaed655d754d6f2aaeb68fd14e025ff75e01855c364f5f70f"
+    },
+    {
+      "path": "remove_best_year_summary.csv",
+      "bytes": 741,
+      "sha256": "b7191ab09c601bcfd25cc52ce679d87de58f25264d816d9fdadf932d64a2df3a"
+    },
+    {
+      "path": "reports/executive_summary.md",
+      "bytes": 2560,
+      "sha256": "d0fa7c37b33fa4cb7700221a3d02bb4c90797600d6dfcdba0431bfaad4bdecb5"
+    },
+    {
+      "path": "reports/final_report.html",
+      "bytes": 9684,
+      "sha256": "3f05ad806368ace6af831f35981242bd69dfc0fcc9dfaf2ebfdd4a7e76520333"
+    },
+    {
+      "path": "reports/final_report.md",
+      "bytes": 7141,
+      "sha256": "cd39c0f546392bbf471c4a8193f2485f499b28ff181fcc8603c25324d478a1e4"
+    },
+    {
+      "path": "strategy_comparison.csv",
+      "bytes": 596,
+      "sha256": "ad7f937bb3961add24538d3e5b3d5a8a9622a1c807b7f6d007e5e4687a7c4c25"
+    },
+    {
+      "path": "subperiod_summary.csv",
+      "bytes": 528,
+      "sha256": "67d336098c485483d58ed21e34e82517da4731e020aa9ade03370965b257522d"
+    }
+  ]
+}
