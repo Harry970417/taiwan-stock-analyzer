@@ -173,6 +173,9 @@ def save_snapshot(
         data_dir=str(csv_dir),
         extra=extra_meta,
     )
+    # Record the pickle's own hash so load_snapshot() can verify integrity
+    # before deserializing it (universe_data.pkl itself is outside data_dir).
+    meta["file_hashes"][pkl_path.name] = _file_sha256(str(pkl_path))
     meta_path = out / "metadata.json"
     with open(meta_path, "w", encoding="utf-8") as f:
         json.dump(meta, f, indent=2, ensure_ascii=False, default=str)
@@ -210,6 +213,18 @@ def load_snapshot(snapshot_dir: str) -> Dict[str, Any]:
     # Load universe data (pickle preferred)
     pkl_path = snap / "universe_data.pkl"
     if pkl_path.exists():
+        expected_hash = metadata.get("file_hashes", {}).get(pkl_path.name)
+        if expected_hash:
+            actual_hash = _file_sha256(str(pkl_path))
+            if actual_hash != expected_hash:
+                raise RuntimeError(
+                    f"Snapshot integrity check failed for {pkl_path}: "
+                    f"expected sha256 {expected_hash}, got {actual_hash}. "
+                    "Refusing to unpickle a snapshot that does not match its recorded hash."
+                )
+        else:
+            print(f"[snapshot] Warning: no recorded hash for {pkl_path.name} "
+                  "(legacy snapshot) — loading without integrity verification")
         with open(pkl_path, "rb") as f:
             universe_data = pickle.load(f)
         print(f"[snapshot] Loaded {len(universe_data)} tickers from pickle ({snap.name})")
