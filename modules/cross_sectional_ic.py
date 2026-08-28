@@ -9,7 +9,9 @@
 #   IC_t = Spearman(factor_i(t) for i in universe, return_i(t+lag) for i in universe)
 #   mean_IC = mean(IC_t over T dates)
 #   ICIR = mean_IC / std(IC_t)
-#   t-stat = ICIR × sqrt(T)           # Grinold & Kahn (2000)
+#   t-stat：NW-HAC（見 modules/stats_utils.py::nw_tstat）。
+#   ICIR × sqrt(T)（Grinold & Kahn 2000）已依 stats_utils.py 的政策棄用，
+#   因為忽略 IC 序列的序列相關性。
 
 import numpy as np
 import pandas as pd
@@ -17,6 +19,7 @@ from scipy import stats as scipy_stats
 from typing import Optional
 
 from modules.multi_factor import compute_factor_matrix
+from modules.stats_utils import nw_tstat
 
 # 可分析的因子名稱（對應 compute_factor_matrix 的輸出欄位）
 FACTOR_NAMES = ["momentum", "trend", "rsi_factor", "volume_factor", "macd_factor"]
@@ -282,8 +285,15 @@ def calc_ic_stats(
     mean_ic = float(ic.mean())
     std_ic = float(ic.std()) if n > 1 else 0.0
     icir = mean_ic / std_ic if std_ic > 1e-9 else 0.0
-    t_stat = icir * np.sqrt(n)
-    p_value = float(2.0 * scipy_stats.t.sf(abs(t_stat), df=n - 1)) if n > 1 else 1.0
+    # PROJECT_AUDIT_2026.md C13: ICIR*sqrt(n) 忽略 IC 序列的序列相關性，
+    # 已被 stats_utils.py 自己的政策標記為 deprecated（該檔頭部註明
+    # "ICIR x sqrt(T) is deprecated for inference; use nw_tstat() instead"）。
+    # 改用 NW-HAC t-stat。此函式不在鎖定論文的 run_chapter5_results.py
+    # 計算路徑上（該腳本用自己的 ic_nw_tstat，已與此處統一），只影響
+    # Streamlit 互動式選股頁面的顯示數字。
+    nw = nw_tstat(ic)
+    t_stat = nw["t_stat"] if not np.isnan(nw["t_stat"]) else 0.0
+    p_value = nw["p_value"] if not np.isnan(nw["p_value"]) else 1.0
     pct_positive = float((ic > 0).mean())
 
     # 60 日滾動 IC 均值（平滑顯示用）
