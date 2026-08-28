@@ -1,0 +1,21 @@
+{
+  "blocked_reason": "Blocked: the repository does not contain a complete historical Taiwan equity universe with delisted, merged, renamed, and suspended securities plus point-in-time liquidity eligibility. No formal bias-controlled performance is produced.",
+  "layer": "Bias-controlled result",
+  "market_representativeness_claim": "Not supported",
+  "no_formal_performance_generated": true,
+  "required_schema": [
+    "security_id",
+    "ticker",
+    "listed_at",
+    "delisted_at",
+    "eligible_from",
+    "eligible_to",
+    "market",
+    "liquidity_rule",
+    "selection_reason",
+    "source",
+    "as_of_date"
+  ],
+  "status": "blocked",
+  "survivorship_bias_eliminated": false
+}

@@ -1,0 +1,264 @@
+{
+  "generated_at_utc": "2026-08-09T05:42:33.444462+00:00",
+  "new_outputs": [
+    {
+      "path": "results/remediation/bias_controlled/bias_controlled_status.json",
+      "sha256": "98110ad75ea55c6b48611620aa6a7f673d60333574cfd19f8a98be3db9f74558",
+      "status": "blocked"
+    },
+    {
+      "path": "results/remediation/comparison_common_period.csv",
+      "sha256": "74d3c44cf338b69d047b3b941cbbbc304f5ff48c19e6fd114020ee07b78251f5",
+      "status": "corrected"
+    },
+    {
+      "path": "results/remediation/critical_remediation_report.md",
+      "sha256": "3f3f2252139d395d77c4cac06e491664cc92e98e6a9ec0daad1181aa6ea5525e",
+      "status": "corrected"
+    },
+    {
+      "path": "results/remediation/old_result_snapshot.json",
+      "sha256": "bb1a527b933c83e0102e79b25ef023cd8e5c878d6bf043df58f60fd3265e4267",
+      "status": "corrected"
+    },
+    {
+      "path": "results/remediation/selected_universe_corrected/factor_availability_rules.json",
+      "sha256": "5e984e2cf6f10fd16e61eb6157e7521488f63294d28dbf6a8090b2349db97e5d",
+      "status": "corrected"
+    },
+    {
+      "path": "results/remediation/selected_universe_corrected/factor_execution_calendar_lag1.csv",
+      "sha256": "97fc874c917213dddbeb4c1cea8871853423c93cded01af9d134cb7d88209284",
+      "status": "corrected"
+    },
+    {
+      "path": "results/remediation/selected_universe_corrected/ic_series_lag1.csv",
+      "sha256": "fe6097067e85229349ab615701fd51f2f25b0469dedd57458f458ef0ee57b4f9",
+      "status": "corrected"
+    },
+    {
+      "path": "results/remediation/selected_universe_corrected/ic_summary_lag1.csv",
+      "sha256": "50074dbe7b3b8ad489033829e1482aaa46f1e73458fa67af165c2c963dbd9707",
+      "status": "corrected"
+    },
+    {
+      "path": "results/remediation/selected_universe_corrected/ls_returns_lag1_common_period.csv",
+      "sha256": "3bb08b604fd8f8efb2d6fc95a20240e3c8a427d33fef903b851b8f22af67f163",
+      "status": "corrected"
+    },
+    {
+      "path": "results/remediation/selected_universe_corrected/net_ls_returns_lag1_common_period.csv",
+      "sha256": "404024c87e5e220ec9a4e3bf715253e62aba3230e7ac42e4ad95bdffa90de2a8",
+      "status": "corrected"
+    },
+    {
+      "path": "results/remediation/selected_universe_corrected/portfolio_metrics_lag1_common_period.csv",
+      "sha256": "a87b147325c79b8a63e0fa33381ce79a6e5a51473d95e8a712c01b4e0ff16e58",
+      "status": "corrected"
+    },
+    {
+      "path": "results/remediation/selected_universe_corrected/return_panel_lag1.csv",
+      "sha256": "64d0b87a5842b977b6ff9afdaa8417d54a7be46a970032f0f34295747358cc7a",
+      "status": "corrected"
+    },
+    {
+      "path": "results/remediation/source_provenance/source_file_hashes.csv",
+      "sha256": "5f3d1d2255c79d2f64951e5e218011133325abfb10cfab0761f3a24cd542ea43",
+      "status": "corrected"
+    },
+    {
+      "path": "results/remediation/source_provenance/source_provenance.json",
+      "sha256": "57d1304849a85b39136961c1ad2c6bb4b198c212549efe38e2d2519f7777bab5",
+      "status": "corrected"
+    },
+    {
+      "path": "results/remediation/source_provenance/source_snapshot.zip",
+      "sha256": "d949d6f6ae57397b60d17b4eab45365c321ad53930bfb2c393ef07e86ba6f7e1",
+      "status": "corrected"
+    },
+    {
+      "path": "results/remediation/source_provenance/working_tree_patch.diff",
+      "sha256": "c11581fc1baedfbf4fc9dda223dd0560c4cf21cb23a3da002d30bd3fa31c0b80",
+      "status": "corrected"
+    },
+    {
+      "path": "results/remediation/universe/bias_controlled_universe_snapshot_schema.csv",
+      "sha256": "1bb69a93a512771f9c3b9eaf9451953d4316739095bbd87f899f2388d7782fd5",
+      "status": "blocked"
+    },
+    {
+      "path": "results/remediation/universe/selected_universe_snapshot_v1.csv",
+      "sha256": "dc95a3e8758259dffaf2e9542211394cc99f967f72a346fb95b00a170896ffaa",
+      "status": "corrected"
+    }
+  ],
+  "old_outputs": [
+    {
+      "exists": true,
+      "path": "results/metadata.json",
+      "reason": "Old metadata records an environment inconsistent with prior requirements and notes the former forward-return issue.",
+      "sha256": "7eb2fc7600e504b93b48a88e38fe57269b0f220aa83be21a0266c2858922a24a",
+      "status": "invalidated"
+    },
+    {
+      "exists": true,
+      "path": "results/data/return_panel.csv",
+      "reason": "Preserved in place; superseded by results/remediation outputs with explicit universe provenance.",
+      "sha256": "7a1140bd2fadd9ed90d313480588cebd74b0ae057251f9e0dd2a9764b8230486",
+      "status": "superseded"
+    },
+    {
+      "exists": true,
+      "path": "results/data/ic_summary_all_factors.csv",
+      "reason": "Preserved in place; superseded by results/remediation outputs with explicit universe provenance.",
+      "sha256": "25b5865d34d5f5b8c847a31fef70f7fae10ea984bf60e822ef864ce53a46eb6c",
+      "status": "superseded"
+    },
+    {
+      "exists": true,
+      "path": "results/data/ic_factor_correlations.csv",
+      "reason": "Preserved in place; superseded by results/remediation outputs with explicit universe provenance.",
+      "sha256": "c4aba51b51b23b738b1e510fd182b7e526427f47e222b83c11f700fe0a5b00d5",
+      "status": "superseded"
+    },
+    {
+      "exists": true,
+      "path": "results/H1/H1_summary.md",
+      "reason": "Preserved in place; superseded by results/remediation outputs with explicit universe provenance.",
+      "sha256": "bbedf3ba92fc32e98e196d85cd318b449508482e3779d3c6a82d9ffe0964d724",
+      "status": "superseded"
+    },
+    {
+      "exists": true,
+      "path": "results/H1/table_c1_fmb_model_a.csv",
+      "reason": "Preserved in place; superseded by results/remediation outputs with explicit universe provenance.",
+      "sha256": "a7df72de47ae37c2dcee742ad27b9c1d247d2443b58eb04a40ea0ea0874d5b20",
+      "status": "superseded"
+    },
+    {
+      "exists": true,
+      "path": "results/H1/table_c1_fmb_model_b.csv",
+      "reason": "Preserved in place; superseded by results/remediation outputs with explicit universe provenance.",
+      "sha256": "f7d2e7533612bf5adcf541877daba17fc2d6b378bb5ff321dd330df9f210b359",
+      "status": "superseded"
+    },
+    {
+      "exists": true,
+      "path": "results/H1/table_c1_fmb_model_c.csv",
+      "reason": "Preserved in place; superseded by results/remediation outputs with explicit universe provenance.",
+      "sha256": "4f649068a65229dc8ae8de610f68419ca69633a53d6297f79ba6fe7165972bb2",
+      "status": "superseded"
+    },
+    {
+      "exists": true,
+      "path": "results/H1/table_c1_model_comparison.csv",
+      "reason": "Preserved in place; superseded by results/remediation outputs with explicit universe provenance.",
+      "sha256": "06d9c5bb5e155e0e16b70a0e671d2c5816cafa202cd895a392efea3fd74fb50e",
+      "status": "superseded"
+    },
+    {
+      "exists": true,
+      "path": "results/H1/table_c2_wald_test.csv",
+      "reason": "Preserved in place; superseded by results/remediation outputs with explicit universe provenance.",
+      "sha256": "0a702210a6a690cd56efb2a2365560cea447de5b1d2884b99d0d1ebbb542efd7",
+      "status": "superseded"
+    },
+    {
+      "exists": true,
+      "path": "results/H1/table_c3_vif_model_c.csv",
+      "reason": "Preserved in place; superseded by results/remediation outputs with explicit universe provenance.",
+      "sha256": "0ffb505cca5efe70cf192acf3702cbd8dd4e86d367e1de76fcf28fbd56933699",
+      "status": "superseded"
+    },
+    {
+      "exists": true,
+      "path": "results/H2/H2_summary.md",
+      "reason": "Preserved in place; superseded by results/remediation outputs with explicit universe provenance.",
+      "sha256": "9fbb97b995234d086a8c784a72ebf516772e738992c99c6342f2c8dad2d16d80",
+      "status": "superseded"
+    },
+    {
+      "exists": true,
+      "path": "results/H2/table_d1_icir_comparison.csv",
+      "reason": "Preserved in place; superseded by results/remediation outputs with explicit universe provenance.",
+      "sha256": "61954d4f301b6cea6ba877a6c7e26432694bbd830a42f5215ef01bf2973d25bd",
+      "status": "superseded"
+    },
+    {
+      "exists": true,
+      "path": "results/H2/table_d2_event_ic_quarterly.csv",
+      "reason": "Preserved in place; superseded by results/remediation outputs with explicit universe provenance.",
+      "sha256": "2cde366059ce258f0e3b9b2e26cdd89860a76c69c010636e30870750a2c06e23",
+      "status": "superseded"
+    },
+    {
+      "exists": true,
+      "path": "results/H2/table_d3_h2b_nwhac_summary.csv",
+      "reason": "Preserved in place; superseded by results/remediation outputs with explicit universe provenance.",
+      "sha256": "de0b206740233443c20a070de5391bd39cad5ca71811df3aff8df220faeae9eb",
+      "status": "superseded"
+    },
+    {
+      "exists": true,
+      "path": "results/H3/H3_summary.md",
+      "reason": "Preserved in place; superseded by results/remediation outputs with explicit universe provenance.",
+      "sha256": "0546d2c36c84cdb0708fc0161b249bc75ae6344f6ce761b8f490fb946ce4e79e",
+      "status": "superseded"
+    },
+    {
+      "exists": true,
+      "path": "results/H3/table_e1_alpha_by_cap.csv",
+      "reason": "Preserved in place; superseded by results/remediation outputs with explicit universe provenance.",
+      "sha256": "41a992894cbb4e994871ee002f363f7d6de87e5c743091088f477045e328bc0e",
+      "status": "superseded"
+    },
+    {
+      "exists": true,
+      "path": "results/H3/table_e2_ic_by_cap.csv",
+      "reason": "Preserved in place; superseded by results/remediation outputs with explicit universe provenance.",
+      "sha256": "048f72b594988e3e926f5ea72343a71fd172b50195d96760e03bc121dce29d2b",
+      "status": "superseded"
+    },
+    {
+      "exists": true,
+      "path": "results/H4/H4_summary.md",
+      "reason": "Preserved in place; superseded by results/remediation outputs with explicit universe provenance.",
+      "sha256": "eada4b3c400928722dbfe63a1608d4619cc61c2783010a24a88e953db5fae13b",
+      "status": "superseded"
+    },
+    {
+      "exists": true,
+      "path": "results/H4/table_f1_fold_results.csv",
+      "reason": "Preserved in place; superseded by results/remediation outputs with explicit universe provenance.",
+      "sha256": "ec4009bf3b41d8949fcc13e1083989865512c0518a983da26e4089af38d5ffad",
+      "status": "superseded"
+    },
+    {
+      "exists": true,
+      "path": "results/H4/table_f2_performance_summary.csv",
+      "reason": "Preserved in place; superseded by results/remediation outputs with explicit universe provenance.",
+      "sha256": "0ee6acf86cf275b681d3872abd5a028c975d313175f430eac68c834439f65b98",
+      "status": "superseded"
+    },
+    {
+      "exists": true,
+      "path": "results/H4/table_f3_robustness.csv",
+      "reason": "Preserved in place; superseded by results/remediation outputs with explicit universe provenance.",
+      "sha256": "9b187dc0bb4c3d34a37531ed227df159afa3dce4951316c750d6ca6ee2965915",
+      "status": "superseded"
+    },
+    {
+      "exists": true,
+      "path": "results/H4/table_f4_tx_cost_breakeven.csv",
+      "reason": "Preserved in place; superseded by results/remediation outputs with explicit universe provenance.",
+      "sha256": "fa5dd926d133dfd7109f4bd73e8bd2e5c006df8ee6f2f73ddf98c13e7fb3f00b",
+      "status": "superseded"
+    }
+  ],
+  "policy": {
+    "bias_controlled_formal_result_generated": false,
+    "old_outputs_overwritten": false,
+    "selected_universe_and_bias_controlled_separated": true,
+    "survivorship_bias_eliminated": false
+  }
+}

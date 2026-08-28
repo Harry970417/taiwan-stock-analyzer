@@ -1,0 +1,114 @@
+{
+  "rules": [
+    {
+      "available_at": "same_session_after_close",
+      "available_time_local": "18:00:00+08:00",
+      "execution_lag_sessions": 1,
+      "execution_price": "next_exchange_session_close",
+      "factor_name": "dealer_net_buy",
+      "rationale": "Institutional flow is same-session information released after the market close; the first daily close price executable after availability is the next exchange session close.",
+      "return_lag_sessions": 1,
+      "source_type": "institutional_flow"
+    },
+    {
+      "available_at": "same_session_after_close",
+      "available_time_local": "18:00:00+08:00",
+      "execution_lag_sessions": 1,
+      "execution_price": "next_exchange_session_close",
+      "factor_name": "eps_growth",
+      "rationale": "The cached fundamental panel does not carry exact release timestamps, so replay treats each observation as available only after that session's close.",
+      "return_lag_sessions": 1,
+      "source_type": "fundamental"
+    },
+    {
+      "available_at": "same_session_after_close",
+      "available_time_local": "18:00:00+08:00",
+      "execution_lag_sessions": 1,
+      "execution_price": "next_exchange_session_close",
+      "factor_name": "foreign_net_buy",
+      "rationale": "Institutional flow is same-session information released after the market close; the first daily close price executable after availability is the next exchange session close.",
+      "return_lag_sessions": 1,
+      "source_type": "institutional_flow"
+    },
+    {
+      "available_at": "same_session_after_close",
+      "available_time_local": "16:00:00+08:00",
+      "execution_lag_sessions": 1,
+      "execution_price": "next_exchange_session_close",
+      "factor_name": "macd_signal",
+      "rationale": "The signal can depend on same-session close, volume, or derived technical values; it cannot receive the same close as its entry price.",
+      "return_lag_sessions": 1,
+      "source_type": "close_or_volume_derived"
+    },
+    {
+      "available_at": "same_session_after_close",
+      "available_time_local": "16:00:00+08:00",
+      "execution_lag_sessions": 1,
+      "execution_price": "next_exchange_session_close",
+      "factor_name": "momentum_20d",
+      "rationale": "The signal can depend on same-session close, volume, or derived technical values; it cannot receive the same close as its entry price.",
+      "return_lag_sessions": 1,
+      "source_type": "close_or_volume_derived"
+    },
+    {
+      "available_at": "same_session_after_close",
+      "available_time_local": "18:00:00+08:00",
+      "execution_lag_sessions": 1,
+      "execution_price": "next_exchange_session_close",
+      "factor_name": "revenue_yoy",
+      "rationale": "The cached fundamental panel does not carry exact release timestamps, so replay treats each observation as available only after that session's close.",
+      "return_lag_sessions": 1,
+      "source_type": "fundamental"
+    },
+    {
+      "available_at": "same_session_after_close",
+      "available_time_local": "18:00:00+08:00",
+      "execution_lag_sessions": 1,
+      "execution_price": "next_exchange_session_close",
+      "factor_name": "roa",
+      "rationale": "The cached fundamental panel does not carry exact release timestamps, so replay treats each observation as available only after that session's close.",
+      "return_lag_sessions": 1,
+      "source_type": "fundamental"
+    },
+    {
+      "available_at": "same_session_after_close",
+      "available_time_local": "18:00:00+08:00",
+      "execution_lag_sessions": 1,
+      "execution_price": "next_exchange_session_close",
+      "factor_name": "roe",
+      "rationale": "The cached fundamental panel does not carry exact release timestamps, so replay treats each observation as available only after that session's close.",
+      "return_lag_sessions": 1,
+      "source_type": "fundamental"
+    },
+    {
+      "available_at": "same_session_after_close",
+      "available_time_local": "16:00:00+08:00",
+      "execution_lag_sessions": 1,
+      "execution_price": "next_exchange_session_close",
+      "factor_name": "rsi_14",
+      "rationale": "The signal can depend on same-session close, volume, or derived technical values; it cannot receive the same close as its entry price.",
+      "return_lag_sessions": 1,
+      "source_type": "close_or_volume_derived"
+    },
+    {
+      "available_at": "same_session_after_close",
+      "available_time_local": "18:00:00+08:00",
+      "execution_lag_sessions": 1,
+      "execution_price": "next_exchange_session_close",
+      "factor_name": "trust_net_buy",
+      "rationale": "Institutional flow is same-session information released after the market close; the first daily close price executable after availability is the next exchange session close.",
+      "return_lag_sessions": 1,
+      "source_type": "institutional_flow"
+    },
+    {
+      "available_at": "same_session_after_close",
+      "available_time_local": "16:00:00+08:00",
+      "execution_lag_sessions": 1,
+      "execution_price": "next_exchange_session_close",
+      "factor_name": "volume_ratio",
+      "rationale": "The signal can depend on same-session close, volume, or derived technical values; it cannot receive the same close as its entry price.",
+      "return_lag_sessions": 1,
+      "source_type": "close_or_volume_derived"
+    }
+  ]
+}

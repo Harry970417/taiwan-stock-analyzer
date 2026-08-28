@@ -1,0 +1,26 @@
+# Remediation-only direct dependency lock for the 2026-08-02 formal replay.
+# Python: 3.14.5
+#
+# Full execution-environment package versions are captured in:
+#   results/remediation/manifest.json
+#
+# Clean installation requires access to a package index or an equivalent local
+# wheelhouse. A previous sandbox attempt could not reach PyPI, so clean-env
+# execution is not complete until rerun in an environment with package access.
+
+pandas==3.0.3
+numpy==2.4.6
+scipy==1.17.1
+yfinance==1.4.1
+requests==2.34.2
+plotly==6.8.0
+python-dateutil==2.9.0.post0
+pytz==2026.2
+streamlit==1.58.0
+matplotlib==3.10.9
+sqlalchemy==2.0.50
+ta==0.11.0
+scikit-learn==1.9.0
+openpyxl==3.1.5
+pytest==9.0.3
+python-dotenv==1.2.2

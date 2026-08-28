@@ -1,0 +1,315 @@
+{
+  "old_h4_performance_summary": [
+    {
+      "Metric": "Mean OOS Sharpe (Baseline A)",
+      "Value": "0.7893  [N=3 folds]"
+    },
+    {
+      "Metric": "Mean OOS Sharpe (Extended B)",
+      "Value": "0.5199  [N=4 folds]"
+    },
+    {
+      "Metric": "Mean Difference (B−A, paired)",
+      "Value": "-0.3381  [N=3 paired folds]"
+    },
+    {
+      "Metric": "Inference method",
+      "Value": "sign_test"
+    },
+    {
+      "Metric": "P-value (H0: diff ≤ 0)",
+      "Value": "0.5"
+    },
+    {
+      "Metric": "N_positive folds (B > A)",
+      "Value": "2"
+    },
+    {
+      "Metric": "95% CI Lower",
+      "Value": "n/a (N<5)"
+    },
+    {
+      "Metric": "95% CI Upper",
+      "Value": "n/a (N<5)"
+    },
+    {
+      "Metric": "N Folds Completed",
+      "Value": "4"
+    },
+    {
+      "Metric": "N Folds Excluded (A=NaN)",
+      "Value": "1"
+    },
+    {
+      "Metric": "Note on baseline",
+      "Value": "A = 4 tech factors only (momentum,volume_ratio,rsi,macd)"
+    }
+  ],
+  "old_ic_summary_head": [
+    {
+      "L_nw": 6,
+      "T": 916,
+      "factor": "roa",
+      "ic_p05": -0.6028,
+      "ic_p25": -0.2619,
+      "ic_p50": 0.0468,
+      "ic_p75": 0.3432,
+      "ic_p95": 0.6538,
+      "icir": 0.0978,
+      "mean_ic": 0.038357,
+      "p_holm": 0.04261,
+      "p_nw": 0.004261,
+      "pct_positive": 54.1,
+      "sig_holm_05": true,
+      "sig_nw_05": true,
+      "std_ic": 0.392255,
+      "t_nw": 2.8653
+    },
+    {
+      "L_nw": 7,
+      "T": 1317,
+      "factor": "dealer_net_buy",
+      "ic_p05": -0.4458,
+      "ic_p25": -0.1735,
+      "ic_p50": 0.0412,
+      "ic_p75": 0.2384,
+      "ic_p95": 0.5035,
+      "icir": 0.1203,
+      "mean_ic": 0.03462,
+      "p_holm": 0.000121,
+      "p_nw": 1.1e-05,
+      "pct_positive": 55.4,
+      "sig_holm_05": true,
+      "sig_nw_05": true,
+      "std_ic": 0.287682,
+      "t_nw": 4.4236
+    },
+    {
+      "L_nw": 6,
+      "T": 916,
+      "factor": "eps_growth",
+      "ic_p05": -0.6034,
+      "ic_p25": -0.2539,
+      "ic_p50": 0.0353,
+      "ic_p75": 0.3118,
+      "ic_p95": 0.63,
+      "icir": 0.0784,
+      "mean_ic": 0.029401,
+      "p_holm": 0.163664,
+      "p_nw": 0.020458,
+      "pct_positive": 53.4,
+      "sig_holm_05": false,
+      "sig_nw_05": true,
+      "std_ic": 0.375167,
+      "t_nw": 2.3219
+    },
+    {
+      "L_nw": 6,
+      "T": 1071,
+      "factor": "revenue_yoy",
+      "ic_p05": -0.5105,
+      "ic_p25": -0.2135,
+      "ic_p50": 0.0383,
+      "ic_p75": 0.2606,
+      "ic_p95": 0.5428,
+      "icir": 0.0701,
+      "mean_ic": 0.022627,
+      "p_holm": 0.183673,
+      "p_nw": 0.026239,
+      "pct_positive": 53.4,
+      "sig_holm_05": false,
+      "sig_nw_05": true,
+      "std_ic": 0.322993,
+      "t_nw": 2.2257
+    },
+    {
+      "L_nw": 7,
+      "T": 1317,
+      "factor": "trust_net_buy",
+      "ic_p05": -0.4532,
+      "ic_p25": -0.1795,
+      "ic_p50": 0.0191,
+      "ic_p75": 0.2147,
+      "ic_p95": 0.4915,
+      "icir": 0.0639,
+      "mean_ic": 0.018176,
+      "p_holm": 0.158832,
+      "p_nw": 0.017648,
+      "pct_positive": 52.5,
+      "sig_holm_05": false,
+      "sig_nw_05": true,
+      "std_ic": 0.284428,
+      "t_nw": 2.3759
+    },
+    {
+      "L_nw": 7,
+      "T": 1299,
+      "factor": "momentum_20d",
+      "ic_p05": -0.5654,
+      "ic_p25": -0.2483,
+      "ic_p50": 0.0118,
+      "ic_p75": 0.2609,
+      "ic_p95": 0.6093,
+      "icir": 0.0277,
+      "mean_ic": 0.00985,
+      "p_holm": 1.0,
+      "p_nw": 0.329876,
+      "pct_positive": 50.7,
+      "sig_holm_05": false,
+      "sig_nw_05": false,
+      "std_ic": 0.355224,
+      "t_nw": 0.9747
+    },
+    {
+      "L_nw": 7,
+      "T": 1305,
+      "factor": "rsi_14",
+      "ic_p05": -0.5524,
+      "ic_p25": -0.2537,
+      "ic_p50": 0.0044,
+      "ic_p75": 0.2529,
+      "ic_p95": 0.5647,
+      "icir": 0.0102,
+      "mean_ic": 0.003492,
+      "p_holm": 1.0,
+      "p_nw": 0.721297,
+      "pct_positive": 50.3,
+      "sig_holm_05": false,
+      "sig_nw_05": false,
+      "std_ic": 0.34116,
+      "t_nw": 0.3568
+    },
+    {
+      "L_nw": 6,
+      "T": 916,
+      "factor": "roe",
+      "ic_p05": -0.4622,
+      "ic_p25": -0.1926,
+      "ic_p50": 0.0,
+      "ic_p75": 0.1978,
+      "ic_p95": 0.4629,
+      "icir": 0.0031,
+      "mean_ic": 0.000875,
+      "p_holm": 1.0,
+      "p_nw": 0.926243,
+      "pct_positive": 49.3,
+      "sig_holm_05": false,
+      "sig_nw_05": false,
+      "std_ic": 0.279264,
+      "t_nw": 0.0926
+    },
+    {
+      "L_nw": 7,
+      "T": 1282,
+      "factor": "macd_signal",
+      "ic_p05": -0.5206,
+      "ic_p25": -0.2259,
+      "ic_p50": 0.0066,
+      "ic_p75": 0.2324,
+      "ic_p95": 0.4971,
+      "icir": -0.0004,
+      "mean_ic": -0.000122,
+      "p_holm": 1.0,
+      "p_nw": 0.988937,
+      "pct_positive": 51.0,
+      "sig_holm_05": false,
+      "sig_nw_05": false,
+      "std_ic": 0.312701,
+      "t_nw": -0.0139
+    },
+    {
+      "L_nw": 7,
+      "T": 1317,
+      "factor": "foreign_net_buy",
+      "ic_p05": -0.5176,
+      "ic_p25": -0.2235,
+      "ic_p50": -0.0074,
+      "ic_p75": 0.2088,
+      "ic_p95": 0.4706,
+      "icir": -0.0339,
+      "mean_ic": -0.01015,
+      "p_holm": 1.0,
+      "p_nw": 0.228379,
+      "pct_positive": 48.9,
+      "sig_holm_05": false,
+      "sig_nw_05": false,
+      "std_ic": 0.299222,
+      "t_nw": -1.2051
+    }
+  ],
+  "old_metadata": {
+    "factors": [
+      "momentum_20d",
+      "volume_ratio",
+      "rsi_14",
+      "macd_signal",
+      "foreign_net_buy",
+      "trust_net_buy",
+      "dealer_net_buy",
+      "roe",
+      "roa",
+      "eps_growth",
+      "revenue_yoy"
+    ],
+    "generated_at": "2026-06-19T20:40:13.201956",
+    "ic_factors": [
+      "momentum_20d",
+      "volume_ratio",
+      "rsi_14",
+      "macd_signal",
+      "foreign_net_buy",
+      "trust_net_buy",
+      "dealer_net_buy",
+      "roe",
+      "roa",
+      "eps_growth",
+      "revenue_yoy"
+    ],
+    "known_limitations": [
+      "SB-1: V1 survivorship bias — 16 large-cap tickers only",
+      "SB-3: no rolling liquidity filter",
+      "LAB-1: forward return shift(−1) semantic documented, not corrected",
+      "Market cap proxy: close×volume (no shares outstanding)",
+      "H2b event dates: FinMind filing date (not actual press release)"
+    ],
+    "packages": {
+      "numpy": "2.4.6",
+      "pandas": "3.0.3",
+      "plotly": "6.8.0",
+      "scipy": "1.17.1",
+      "yfinance": "1.4.1"
+    },
+    "platform": "Windows-11-10.0.26100-SP0",
+    "python_version": "3.14.5",
+    "run_id": "20260619_203713",
+    "study_period": {
+      "end": "2026-06-19",
+      "lag": 1,
+      "start": "2021-01-01"
+    },
+    "universe": {
+      "mode": "V1",
+      "n": 16,
+      "tickers": [
+        "2330.TW",
+        "2317.TW",
+        "2454.TW",
+        "2308.TW",
+        "2382.TW",
+        "2303.TW",
+        "2412.TW",
+        "2881.TW",
+        "2882.TW",
+        "2886.TW",
+        "1301.TW",
+        "1303.TW",
+        "2002.TW",
+        "2912.TW",
+        "2207.TW",
+        "6505.TW"
+      ]
+    }
+  },
+  "old_results_preserved_in_place": true,
+  "status": "superseded_or_invalidated"
+}

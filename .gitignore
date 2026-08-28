@@ -48,6 +48,8 @@ htmlcov/
 
 # Phase 1 pipeline cache (binary, auto-regenerated)
 results/data/*.pkl
+!results/data/universe_data.pkl
+!results/data/factor_panels.pkl
 
 # Run logs (transient)
 results/*.log

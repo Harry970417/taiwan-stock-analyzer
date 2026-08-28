@@ -1,0 +1,51 @@
+{
+  "exclusions": {
+    "excluded_prefixes": [
+      ".git/",
+      ".mypy_cache/",
+      ".pytest_cache/",
+      ".ruff_cache/",
+      ".venv/",
+      "venv/",
+      "__pycache__/",
+      "docs/screenshots/",
+      "results/"
+    ],
+    "generated_results_and_cache_inputs_excluded_from_source_snapshot": true,
+    "generated_results_and_cache_paths_excluded_from_working_tree_patch": true,
+    "input_caches_hashed_separately": [
+      "results/data/factor_panels.pkl",
+      "results/data/universe_data.pkl"
+    ],
+    "working_tree_patch_excluded_patterns": [
+      "results/**",
+      "data/**",
+      "exports/**",
+      ".mypy_cache/**",
+      ".pytest_cache/**",
+      ".ruff_cache/**",
+      ".venv/**",
+      "venv/**",
+      "__pycache__/**",
+      "docs/screenshots/**"
+    ]
+  },
+  "git_commit": "9dd1066ba4e31ea3e2b08c2c70112c716ad37f62",
+  "git_status_short": "## master...origin/master [ahead 9]\n M .gitignore\n M README.md\n M docs/known_issues.md\n M docs/research_report_v1.md\n M environment.yml\n M modules/cross_sectional_ic.py\n M modules/factor_portfolio.py\n M modules/transaction_cost.py\n M modules/universe_pit.py\n M pages/7_因子選股.py\n M pyproject.toml\n M reproducibility_manifest.md\n M requirements.txt\n M tests/test_cross_sectional.py\n M thesis/chapter5_實證結果.md\n?? requirements.lock.txt\n?? results/data/CACHE_INPUTS.md\n?? results/data/factor_panels.pkl\n?? results/data/universe_data.pkl\n?? results/remediation/\n?? scripts/run_critical_remediation.py\n?? tests/test_run_critical_remediation.py\n?? tests/test_universe_snapshot.py",
+  "reproduction_note": "Checking out git_commit alone is insufficient when this field contains a dirty worktree. Apply the recorded working-tree patch and restore the source snapshot/untracked source files to reproduce the exact runner and source used for these outputs.",
+  "source_file_count": 137,
+  "source_file_hashes_path": "results/remediation/source_provenance/source_file_hashes.csv",
+  "source_file_hashes_sha256": "5f3d1d2255c79d2f64951e5e218011133325abfb10cfab0761f3a24cd542ea43",
+  "source_snapshot_path": "results/remediation/source_provenance/source_snapshot.zip",
+  "source_snapshot_sha256": "d949d6f6ae57397b60d17b4eab45365c321ad53930bfb2c393ef07e86ba6f7e1",
+  "untracked_source_files": [
+    "requirements.lock.txt",
+    "scripts/run_critical_remediation.py",
+    "tests/test_run_critical_remediation.py",
+    "tests/test_universe_snapshot.py"
+  ],
+  "working_tree_patch_path": "results/remediation/source_provenance/working_tree_patch.diff",
+  "working_tree_patch_returncode": 0,
+  "working_tree_patch_sha256": "c11581fc1baedfbf4fc9dda223dd0560c4cf21cb23a3da002d30bd3fa31c0b80",
+  "working_tree_patch_stderr": "warning: unable to access 'C:\\Users\\user/.config/git/ignore': Permission denied\nwarning: in the working copy of '.gitignore', LF will be replaced by CRLF the next time Git touches it\nwarning: in the working copy of 'README.md', LF will be replaced by CRLF the next time Git touches it\nwarning: in the working copy of 'docs/known_issues.md', LF will be replaced by CRLF the next time Git touches it\nwarning: in the working copy of 'docs/research_report_v1.md', LF will be replaced by CRLF the next time Git touches it\nwarning: in the working copy of 'environment.yml', LF will be replaced by CRLF the next time Git touches it\nwarning: in the working copy of 'modules/cross_sectional_ic.py', LF will be replaced by CRLF the next time Git touches it\nwarning: in the working copy of 'modules/factor_portfolio.py', LF will be replaced by CRLF the next time Git touches it\nwarning: in the working copy of 'modules/transaction_cost.py', LF will be replaced by CRLF the next time Git touches it\nwarning: in the working copy of 'modules/universe_pit.py', LF will be replaced by CRLF the next time Git touches it\nwarning: in the working copy of 'pages/7_因子選股.py', LF will be replaced by CRLF the next time Git touches it\nwarning: in the working copy of 'pyproject.toml', LF will be replaced by CRLF the next time Git touches it\nwarning: in the working copy of 'reproducibility_manifest.md', LF will be replaced by CRLF the next time Git touches it\nwarning: in the working copy of 'requirements.txt', LF will be replaced by CRLF the next time Git touches it\nwarning: in the working copy of 'tests/test_cross_sectional.py', LF will be replaced by CRLF the next time Git touches it\nwarning: in the working copy of 'thesis/chapter5_實證結果.md', LF will be replaced by CRLF the next time Git touches it"
+}
