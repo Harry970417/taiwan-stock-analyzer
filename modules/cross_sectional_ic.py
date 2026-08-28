@@ -59,7 +59,15 @@ def build_factor_panel(
         fdf = compute_factor_matrix(df)
         if fdf.empty or factor_name not in fdf.columns:
             continue
-        series_dict[ticker] = fdf[factor_name]
+        series = fdf[factor_name].copy()
+        idx = pd.to_datetime(pd.Index(series.index), errors="coerce")
+        valid = ~pd.isna(idx)
+        series = series.iloc[np.asarray(valid)].copy()
+        idx = pd.DatetimeIndex(idx[valid])
+        if getattr(idx, "tz", None) is not None:
+            idx = idx.tz_localize(None)
+        series.index = pd.DatetimeIndex(idx.normalize())
+        series_dict[ticker] = series.groupby(level=0).last().sort_index()
 
     if not series_dict:
         return pd.DataFrame()
@@ -81,7 +89,66 @@ def build_all_factor_panels(universe_data: dict) -> dict:
 # 2. 建立報酬面板
 # ---------------------------------------------------------------------------
 
-def build_return_panel(universe_data: dict, lag: int = 1) -> pd.DataFrame:
+def _normalise_daily_index(values) -> pd.DatetimeIndex:
+    idx = pd.to_datetime(pd.Index(values), errors="coerce")
+    idx = pd.DatetimeIndex(idx[~pd.isna(idx)])
+    if getattr(idx, "tz", None) is not None:
+        idx = idx.tz_localize(None)
+    return pd.DatetimeIndex(idx.normalize()).drop_duplicates().sort_values()
+
+
+def build_trading_calendar(universe_data: dict) -> pd.DatetimeIndex:
+    """
+    Build the canonical local exchange-session calendar from observed data.
+
+    The repository does not ship an independent TWSE holiday/suspension
+    calendar. For offline replay, the safest available canonical calendar is
+    the union of all observed trading dates across the universe. Individual
+    tickers are then reindexed to that calendar so suspended or missing ticker
+    rows become non-executable NaN returns instead of rolling to the next
+    available ticker row.
+    """
+    calendars = []
+    for df in universe_data.values():
+        if not isinstance(df, pd.DataFrame) or df.empty:
+            continue
+        if "date" in df.columns:
+            calendars.append(_normalise_daily_index(df["date"]))
+        else:
+            calendars.append(_normalise_daily_index(df.index))
+    if not calendars:
+        return pd.DatetimeIndex([])
+    return pd.DatetimeIndex(sorted(set().union(*(cal.tolist() for cal in calendars))))
+
+
+def _close_on_calendar(df: pd.DataFrame, calendar: pd.DatetimeIndex) -> pd.Series:
+    if "close" not in df.columns:
+        return pd.Series(index=calendar, dtype=float)
+    if "date" in df.columns:
+        raw_dates = pd.to_datetime(df["date"], errors="coerce")
+        valid = raw_dates.notna()
+        dates = pd.DatetimeIndex(raw_dates.loc[valid])
+        values = pd.to_numeric(df.loc[valid, "close"], errors="coerce")
+    else:
+        raw_dates = pd.Series(pd.to_datetime(df.index, errors="coerce"), index=df.index)
+        valid = raw_dates.notna()
+        dates = pd.DatetimeIndex(raw_dates.loc[valid])
+        values = pd.to_numeric(df.loc[valid, "close"], errors="coerce")
+    if len(dates) == 0:
+        return pd.Series(index=calendar, dtype=float)
+    if getattr(dates, "tz", None) is not None:
+        dates = dates.tz_localize(None)
+    dates = pd.DatetimeIndex(dates.normalize())
+    close = pd.Series(values.to_numpy(), index=dates).sort_index()
+    close = close.groupby(level=0).last()
+    return close.reindex(calendar)
+
+
+def build_return_panel(
+    universe_data: dict,
+    lag: int = 1,
+    trading_calendar: pd.DatetimeIndex | None = None,
+) -> pd.DataFrame:
     """
     建立前瞻報酬面板（寬表）。
 
@@ -97,18 +164,32 @@ def build_return_panel(universe_data: dict, lag: int = 1) -> pd.DataFrame:
     -------
     pd.DataFrame  index=date, columns=tickers, values=forward return at t+lag
     """
+    if lag < 1:
+        raise ValueError("lag must be a positive number of trading sessions")
+
+    calendar = (
+        _normalise_daily_index(trading_calendar)
+        if trading_calendar is not None
+        else build_trading_calendar(universe_data)
+    )
+    if len(calendar) == 0:
+        return pd.DataFrame()
+
     series_dict = {}
     for ticker, df in universe_data.items():
-        df_idx = df.set_index("date").sort_index()
-        ret = df_idx["close"].pct_change()
-        # shift(-lag): ret.loc[t] = return from t to t+lag
-        series_dict[ticker] = ret.shift(-lag)
+        if not isinstance(df, pd.DataFrame):
+            continue
+        close = _close_on_calendar(df, calendar)
+        # Forward cumulative return from session t to exactly t + lag.
+        # Missing target-session prices remain NaN; they are not substituted
+        # with a later available ticker row.
+        series_dict[ticker] = close.shift(-lag) / close - 1.0
 
     if not series_dict:
         return pd.DataFrame()
 
     panel = pd.DataFrame(series_dict)
-    panel.index = pd.to_datetime(panel.index)
+    panel.index = calendar
     return panel.sort_index()
 
 

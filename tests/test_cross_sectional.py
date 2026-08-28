@@ -6,9 +6,11 @@ import numpy as np
 import pandas as pd
 import pytest
 
+import modules.factor_portfolio as factor_portfolio_module
 from modules.cross_sectional_ic import (
     build_factor_panel,
     build_return_panel,
+    build_trading_calendar,
     calc_cross_sectional_ic_series,
     calc_ic_stats,
     calc_all_factors_cross_ic,
@@ -16,9 +18,11 @@ from modules.cross_sectional_ic import (
     FACTOR_NAMES,
 )
 from modules.factor_portfolio import (
+    align_factor_panel_to_execution,
     build_quantile_portfolios,
     calc_cumulative_returns,
     calc_portfolio_metrics,
+    get_factor_availability_rule,
     quantile_metrics_to_df,
     run_factor_portfolio_analysis,
 )
@@ -145,6 +149,112 @@ class TestCrossSectionalIC:
         nan1 = panel1.tail(5).isna().all(axis=1).sum()
         assert nan5 >= nan1
 
+    def test_build_return_panel_lag5_uses_cumulative_forward_return(self):
+        dates = pd.date_range("2024-01-01", periods=30, freq="B")
+        close = pd.Series(np.linspace(100.0, 158.0, len(dates)), index=dates)
+        df = pd.DataFrame({
+            "date": dates,
+            "open": close.values,
+            "high": close.values,
+            "low": close.values,
+            "close": close.values,
+            "volume": 1_000_000.0,
+            "ticker": "TEST",
+        })
+
+        panel = build_return_panel({"TEST": df}, lag=5)
+
+        expected = close.iloc[5] / close.iloc[0] - 1.0
+        old_wrong = close.pct_change().shift(-5).iloc[0]
+        assert panel.loc[dates[0], "TEST"] == pytest.approx(expected)
+        assert panel.loc[dates[0], "TEST"] != pytest.approx(old_wrong)
+        assert panel["TEST"].tail(5).isna().all()
+
+    def test_build_return_panel_lag20_uses_cumulative_forward_return(self):
+        dates = pd.date_range("2024-01-01", periods=45, freq="B")
+        close = pd.Series(np.linspace(100.0, 188.0, len(dates)), index=dates)
+        df = pd.DataFrame({
+            "date": dates,
+            "open": close.values,
+            "high": close.values,
+            "low": close.values,
+            "close": close.values,
+            "volume": 1_000_000.0,
+            "ticker": "TEST",
+        })
+
+        panel = build_return_panel({"TEST": df}, lag=20)
+
+        expected = close.iloc[20] / close.iloc[0] - 1.0
+        old_wrong = close.pct_change().shift(-20).iloc[0]
+        assert panel.loc[dates[0], "TEST"] == pytest.approx(expected)
+        assert panel.loc[dates[0], "TEST"] != pytest.approx(old_wrong)
+        assert panel["TEST"].tail(20).isna().all()
+
+    def test_build_return_panel_marks_missing_next_session_non_executable(self):
+        dates = pd.date_range("2024-01-02", periods=3, freq="B")
+        active = pd.DataFrame({
+            "date": dates,
+            "open": [100.0, 110.0, 121.0],
+            "high": [100.0, 110.0, 121.0],
+            "low": [100.0, 110.0, 121.0],
+            "close": [100.0, 110.0, 121.0],
+            "volume": 1_000_000.0,
+            "ticker": "ACTIVE",
+        })
+        suspended = pd.DataFrame({
+            "date": [dates[0], dates[2]],
+            "open": [100.0, 130.0],
+            "high": [100.0, 130.0],
+            "low": [100.0, 130.0],
+            "close": [100.0, 130.0],
+            "volume": 1_000_000.0,
+            "ticker": "SUSP",
+        })
+
+        panel = build_return_panel({"ACTIVE": active, "SUSP": suspended}, lag=1)
+
+        assert panel.loc[dates[0], "ACTIVE"] == pytest.approx(0.10)
+        assert pd.isna(panel.loc[dates[0], "SUSP"])
+        assert panel.loc[dates[1], "ACTIVE"] == pytest.approx(0.10)
+        assert pd.isna(panel.loc[dates[1], "SUSP"])
+
+    def test_build_return_panel_preserves_tz_aware_local_midnight_dates(self):
+        dates = pd.date_range("2024-01-02", periods=2, freq="B", tz="Asia/Taipei")
+        df = pd.DataFrame({
+            "date": dates,
+            "open": [100.0, 110.0],
+            "high": [100.0, 110.0],
+            "low": [100.0, 110.0],
+            "close": [100.0, 110.0],
+            "volume": 1_000_000.0,
+            "ticker": "TEST",
+        })
+
+        calendar = build_trading_calendar({"TEST": df})
+        panel = build_return_panel({"TEST": df}, lag=1, trading_calendar=calendar)
+
+        assert calendar[0] == pd.Timestamp("2024-01-02")
+        assert pd.Timestamp("2024-01-01") not in calendar
+        assert panel.loc[pd.Timestamp("2024-01-02"), "TEST"] == pytest.approx(0.10)
+
+    def test_calc_all_factors_cross_ic_tz_aware_input_has_observations(self):
+        universe = _make_universe(n_stocks=10, n_days=90)
+        for df in universe.values():
+            df["date"] = pd.DatetimeIndex(df["date"]).tz_localize("Asia/Taipei")
+
+        factor_panel = build_factor_panel(universe, "momentum")
+        return_panel = build_return_panel(universe, lag=1)
+        common_dates = factor_panel.index.intersection(return_panel.index)
+        all_ic = calc_all_factors_cross_ic(universe, lag=1, min_stocks=5)
+        momentum_ic = all_ic["_ic_series"]["momentum"].dropna()
+
+        assert getattr(factor_panel.index, "tz", None) is None
+        assert getattr(return_panel.index, "tz", None) is None
+        assert len(common_dates) > 0
+        assert len(momentum_ic) > 0
+        assert all_ic["momentum"]["n_obs"] == len(momentum_ic)
+
     def test_calc_cross_sectional_ic_series_length(self):
         fp = build_factor_panel(self.universe, "momentum")
         rp = build_return_panel(self.universe, lag=1)
@@ -264,6 +374,175 @@ class TestFactorPortfolio:
         q_df = build_quantile_portfolios(pd.DataFrame(), pd.DataFrame())
         assert q_df.empty
 
+    @staticmethod
+    def _execution_alignment_fixture(factor_name: str):
+        dates = pd.date_range("2024-01-02", periods=4, freq="B")
+        tickers = [f"S{i}" for i in range(10)]
+        ranks = np.arange(10, dtype=float)
+        factor_panel = pd.DataFrame([ranks], index=[dates[0]], columns=tickers)
+        universe = {}
+        for rank, ticker in enumerate(tickers):
+            same_close_return = -0.002 * rank
+            executable_return = 0.003 * rank
+            c0 = 100.0
+            c1 = c0 * (1.0 + same_close_return)
+            c2 = c1 * (1.0 + executable_return)
+            c3 = c2
+            universe[ticker] = pd.DataFrame({
+                "date": dates,
+                "open": [c0, c1, c2, c3],
+                "high": [c0, c1, c2, c3],
+                "low": [c0, c1, c2, c3],
+                "close": [c0, c1, c2, c3],
+                "volume": 1_000_000.0,
+                "ticker": ticker,
+            })
+        calendar = build_trading_calendar(universe)
+        rule = get_factor_availability_rule(factor_name, return_lag_sessions=1)
+        aligned, schedule = align_factor_panel_to_execution(
+            factor_panel,
+            calendar,
+            factor_name=factor_name,
+            availability_rule=rule,
+            return_lag_sessions=1,
+        )
+        returns = build_return_panel(universe, lag=1, trading_calendar=calendar)
+        q_df = build_quantile_portfolios(aligned, returns, n_quantiles=5, min_stocks=5)
+        return dates, q_df, schedule
+
+    def test_close_derived_signal_does_not_receive_same_close_return(self):
+        dates, q_df, schedule = self._execution_alignment_fixture("momentum_20d")
+
+        assert dates[0] not in q_df.index
+        assert q_df.index[0] == dates[1]
+        assert schedule.loc[0, "signal_date"] == dates[0].date().isoformat()
+        assert schedule.loc[0, "execution_date"] == dates[1].date().isoformat()
+        assert q_df.loc[dates[1], "LS"] > 0.0
+
+    def test_flow_signal_does_not_receive_same_close_return(self):
+        dates, q_df, schedule = self._execution_alignment_fixture("foreign_net_buy")
+
+        assert dates[0] not in q_df.index
+        assert q_df.index[0] == dates[1]
+        assert schedule.loc[0, "source_type"] == "institutional_flow"
+        assert schedule.loc[0, "execution_date"] == dates[1].date().isoformat()
+        assert q_df.loc[dates[1], "LS"] > 0.0
+
+    def test_execution_schedule_collapses_holiday_gap_with_factor_rows(self):
+        calendar = pd.DatetimeIndex([
+            "2024-02-07",
+            "2024-02-15",
+            "2024-02-16",
+        ])
+        signal_dates = pd.DatetimeIndex([
+            "2024-02-07",
+            "2024-02-08",
+            "2024-02-09",
+        ])
+        tickers = [f"S{i}" for i in range(6)]
+        factor_panel = pd.DataFrame(
+            [
+                np.full(len(tickers), 1.0),
+                np.full(len(tickers), 2.0),
+                np.arange(len(tickers), dtype=float),
+            ],
+            index=signal_dates,
+            columns=tickers,
+        )
+        rule = get_factor_availability_rule("momentum_20d", return_lag_sessions=1)
+
+        aligned, schedule = align_factor_panel_to_execution(
+            factor_panel,
+            calendar,
+            factor_name="momentum_20d",
+            availability_rule=rule,
+            return_lag_sessions=1,
+        )
+
+        assert list(aligned.index) == [pd.Timestamp("2024-02-15")]
+        assert len(schedule) == len(aligned)
+        assert not schedule.duplicated(["factor", "execution_date"]).any()
+        assert set(zip(schedule["factor"], pd.to_datetime(schedule["execution_date"]))) == {
+            ("momentum_20d", pd.Timestamp("2024-02-15"))
+        }
+        assert schedule.loc[0, "signal_date"] == "2024-02-09"
+        pd.testing.assert_series_equal(
+            aligned.iloc[0],
+            factor_panel.loc[pd.Timestamp("2024-02-09")],
+            check_names=False,
+        )
+
+    def test_execution_aligned_ic_uses_execution_date_return(self, monkeypatch):
+        dates = pd.date_range("2024-01-02", periods=4, freq="B")
+        tickers = [f"S{i}" for i in range(10)]
+        ranks = np.arange(10, dtype=float)
+        factor_panel = pd.DataFrame([ranks], index=[dates[0]], columns=tickers)
+        universe = {}
+        for rank, ticker in enumerate(tickers):
+            same_close_return = -0.002 * rank
+            executable_return = 0.003 * rank
+            c0 = 100.0
+            c1 = c0 * (1.0 + same_close_return)
+            c2 = c1 * (1.0 + executable_return)
+            c3 = c2
+            universe[ticker] = pd.DataFrame({
+                "date": dates,
+                "open": [c0, c1, c2, c3],
+                "high": [c0, c1, c2, c3],
+                "low": [c0, c1, c2, c3],
+                "close": [c0, c1, c2, c3],
+                "volume": 1_000_000.0,
+                "ticker": ticker,
+            })
+
+        calendar = build_trading_calendar(universe)
+        raw_returns = build_return_panel(universe, lag=1, trading_calendar=calendar)
+        raw_ic = calc_cross_sectional_ic_series(factor_panel, raw_returns, min_stocks=5)
+        assert raw_ic.loc[dates[0]] < -0.9
+
+        def fake_build_factor_panel(universe_data, factor_name):
+            if factor_name == "momentum":
+                return factor_panel
+            return pd.DataFrame()
+
+        monkeypatch.setattr(
+            factor_portfolio_module,
+            "build_factor_panel",
+            fake_build_factor_panel,
+        )
+
+        all_ic = factor_portfolio_module.calc_all_factors_execution_aligned_ic(
+            universe,
+            lag=1,
+            min_stocks=5,
+        )
+        aligned_ic = all_ic["_ic_series"]["momentum"]
+
+        assert dates[0] not in aligned_ic.index
+        assert list(aligned_ic.index) == [dates[1]]
+        assert aligned_ic.iloc[0] > 0.9
+
+    def test_alignment_drops_penultimate_signal_without_exit_price(self):
+        dates = pd.date_range("2024-01-02", periods=4, freq="B")
+        tickers = [f"S{i}" for i in range(10)]
+        factor_panel = pd.DataFrame(
+            [np.arange(len(tickers), dtype=float)],
+            index=[dates[-2]],
+            columns=tickers,
+        )
+        rule = get_factor_availability_rule("momentum_20d", return_lag_sessions=1)
+
+        aligned, schedule = align_factor_panel_to_execution(
+            factor_panel,
+            dates,
+            factor_name="momentum_20d",
+            availability_rule=rule,
+            return_lag_sessions=1,
+        )
+
+        assert aligned.empty
+        assert schedule.empty
+
     def test_calc_cumulative_returns_starts_near_zero(self):
         q_df = build_quantile_portfolios(self.fp, self.rp, n_quantiles=5)
         cum = calc_cumulative_returns(q_df)
@@ -318,6 +597,45 @@ class TestFactorPortfolio:
     def test_run_factor_portfolio_analysis_empty_universe(self):
         result = run_factor_portfolio_analysis({}, factor_name="momentum")
         assert result["error"] is not None
+
+    def test_run_factor_portfolio_analysis_reports_no_executable_factor_data(self, monkeypatch):
+        dates = pd.date_range("2024-01-02", periods=3, freq="B")
+        tickers = [f"S{i}" for i in range(10)]
+        universe = {}
+        for ticker in tickers:
+            universe[ticker] = pd.DataFrame({
+                "date": dates,
+                "open": [100.0, 101.0, 102.0],
+                "high": [100.0, 101.0, 102.0],
+                "low": [100.0, 101.0, 102.0],
+                "close": [100.0, 101.0, 102.0],
+                "volume": 1_000_000.0,
+                "ticker": ticker,
+            })
+        factor_panel = pd.DataFrame(
+            [np.arange(len(tickers), dtype=float)],
+            index=[dates[-1]],
+            columns=tickers,
+        )
+        monkeypatch.setattr(
+            factor_portfolio_module,
+            "build_factor_panel",
+            lambda universe_data, factor_name: factor_panel,
+        )
+
+        result = factor_portfolio_module.run_factor_portfolio_analysis(
+            universe,
+            factor_name="momentum",
+            lag=1,
+            n_quantiles=5,
+            min_stocks=5,
+        )
+
+        assert result["error"] == (
+            "No executable factor data remains after execution-date alignment. "
+            "Signals may occur only on or after the last available trading "
+            "session, leaving no next-session close for execution."
+        )
 
     def test_positive_ic_factor_positive_ls(self):
         """
