@@ -1,35 +1,21 @@
-# requirements.txt — Taiwan Stock Factor Analyzer (Phase 1)
-# Updated: 2026-06-19 | Platform: Windows 11 | Python 3.11 mainline
+# requirements.txt - Taiwan Stock Factor Analyzer mainline runtime
+# Python: 3.11
 #
-# Recommended runtime: Python 3.11.x. Version ranges below align with
-# pyproject.toml and keep pandas<3 / numpy<2 for reproducible research runs.
+# Install:
+#   python -m pip install -r requirements.txt
 #
-# ⚠️ Known version conflict: the environment that actually produced
-# results/metadata.json (Python 3.14.5, pandas 3.0.3, numpy 2.4.6) exceeds
-# the caps below. This is tracked as a Critical/Acknowledged item in
-# reproducibility_manifest.md — see that file before assuming a fresh
-# install reproduces results/ bit-for-bit.
-#
-# Install: pip install -r requirements.txt
-# Reproduce exactly: pip install --no-deps -r requirements.txt
+# The remediation replay produced on Python 3.14.5 is pinned separately in
+# requirements.lock.txt. This main runtime stays aligned with Dockerfile and
+# pyproject.toml on pandas<3 / numpy<2.
 
-# --- Core scientific stack (Phase 1 confirmed versions) ---
 pandas>=2.0.0,<3.0
 numpy>=1.24.0,<2.0
 scipy==1.17.1
-
-# --- Financial data ---
 yfinance==1.4.1
 requests==2.34.2
-
-# --- Visualisation ---
 plotly==6.8.0
-
-# --- Utilities ---
 python-dateutil==2.9.0.post0
 pytz==2026.2
-
-# --- Application (Phase 0 dashboard, not required for Phase 1 pipeline) ---
 streamlit==1.58.0
 matplotlib==3.10.9
 sqlalchemy==2.0.50
