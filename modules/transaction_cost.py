@@ -39,7 +39,18 @@ ANNUAL_FACTOR = 252
 # 1. Portfolio Turnover
 # ─────────────────────────────────────────────────────────────────────────────
 
-def calc_daily_turnover(
+def _assign_equal_count_quantiles(values: np.ndarray, n_quantiles: int) -> np.ndarray | None:
+    if len(values) < n_quantiles:
+        return None
+    if np.unique(values).size < n_quantiles:
+        return None
+    order = np.argsort(values, kind="mergesort")
+    labels = np.empty(len(values), dtype=int)
+    labels[order] = (np.arange(len(values)) * n_quantiles // len(values)) + 1
+    return labels
+
+
+def _calc_daily_turnover_legacy(
     factor_panel: pd.DataFrame,
     return_panel: pd.DataFrame,
     n_quantiles: int = 5,
@@ -112,6 +123,80 @@ def calc_daily_turnover(
             "LS_turnover":  to_ls,
             "Q1_n":         len(q1_set),
             "Q5_n":         len(q5_set),
+        })
+        prev_q1_set = q1_set
+        prev_q5_set = q5_set
+
+    if not records:
+        return pd.DataFrame()
+    return pd.DataFrame(records).set_index("date")
+
+
+def calc_daily_turnover(
+    factor_panel: pd.DataFrame,
+    return_panel: pd.DataFrame,
+    n_quantiles: int = 5,
+    min_stocks: int = 5,
+) -> pd.DataFrame:
+    """
+    Estimate Q1/Q5/L/S turnover from aligned factor and executable return panels.
+    """
+    common_dates = factor_panel.index.intersection(return_panel.index).sort_values()
+    common_tickers = factor_panel.columns.intersection(return_panel.columns)
+    if len(common_dates) < 2 or len(common_tickers) == 0:
+        return pd.DataFrame()
+
+    factor_values = (
+        factor_panel.reindex(index=common_dates, columns=common_tickers)
+        .apply(pd.to_numeric, errors="coerce")
+        .to_numpy(dtype=float)
+    )
+    return_values = (
+        return_panel.reindex(index=common_dates, columns=common_tickers)
+        .apply(pd.to_numeric, errors="coerce")
+        .to_numpy(dtype=float)
+    )
+    ticker_values = np.asarray(common_tickers, dtype=object)
+
+    records = []
+    prev_q1_set = set()
+    prev_q5_set = set()
+
+    def _turnover(curr: set, prev: set) -> float:
+        if not prev:
+            return 1.0
+        n = len(curr)
+        if n == 0:
+            return 0.0
+        entered = len(curr - prev)
+        exited = len(prev - curr)
+        return (entered + exited) / (2 * n)
+
+    for i, date in enumerate(common_dates):
+        f_row = factor_values[i]
+        r_row = return_values[i]
+        valid = np.isfinite(f_row) & np.isfinite(r_row)
+        if int(valid.sum()) < min_stocks:
+            continue
+
+        q_labels = _assign_equal_count_quantiles(f_row[valid], n_quantiles)
+        if q_labels is None:
+            continue
+
+        tickers = ticker_values[valid]
+        q1_set = set(tickers[q_labels == 1])
+        q5_set = set(tickers[q_labels == n_quantiles])
+        to_q1 = _turnover(q1_set, prev_q1_set)
+        to_q5 = _turnover(q5_set, prev_q5_set)
+        to_ls = (to_q1 + to_q5) / 2
+
+        records.append({
+            "date": date,
+            "Q1_turnover": to_q1,
+            "Q5_turnover": to_q5,
+            "LS_turnover": to_ls,
+            "Q1_n": len(q1_set),
+            "Q5_n": len(q5_set),
         })
         prev_q1_set = q1_set
         prev_q5_set = q5_set
