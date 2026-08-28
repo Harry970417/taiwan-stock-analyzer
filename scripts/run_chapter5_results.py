@@ -37,7 +37,6 @@ import sys
 import warnings
 from datetime import datetime, timedelta
 from itertools import permutations
-from math import floor
 from pathlib import Path
 
 import numpy as np
@@ -90,47 +89,24 @@ def _section(title: str):
 
 # ═════════════════════════════════════════════════════════════════════════════
 # 統計輔助函式
+#
+# PROJECT_AUDIT_2026.md C3/C4/C12: nw_truncation/nw_variance/nw_tstat_mean/
+# ols_nwhac 曾在此檔、modules/fama_macbeth.py、modules/stats_utils.py 三處
+# 各自獨立實作。已用合成資料逐項數值核對（多組隨機序列，t/mean/se/alpha/
+# alpha_t 全部 bit-for-bit 相同，diff=0.00e+00），確認三份實作本來就是同一條
+# 公式，純粹是複製貼上造成的重複，不是分歧的統計方法。現在統一改為呼叫
+# modules/stats_utils.py 的正式版本，僅保留與既有呼叫端相容的介面（tuple
+# 回傳），不改變任何計算邏輯，因此本檔案下游算出的 H1/H2/H3 數字不會改變。
 # ═════════════════════════════════════════════════════════════════════════════
 
-def nw_truncation(T: int) -> int:
-    """Newey-West HAC 截斷落後期 L = floor(4*(T/100)^(2/9))"""
-    return max(1, floor(4 * (T / 100) ** (2 / 9)))
-
-
-def nw_variance(x: np.ndarray) -> float:
-    """
-    Newey-West HAC 樣本均值變異數估計量。
-    Var(mean(x)) = Omega_NW / T，其中
-      Omega_NW = gamma_hat[0] + 2*sum_{j=1}^{L} w_j * gamma_hat[j]
-      gamma_hat[j] = (1/T)*sum_t x_t*x_{t+j}（已除以 T，故再除 T 得 Var(mean)）
-    w_j = 1 - j/(L+1) (Bartlett kernel)
-    """
-    x = np.asarray(x, dtype=float)
-    x = x[~np.isnan(x)]
-    T = len(x)
-    if T < 4:
-        return np.nan
-    demeaned = x - x.mean()
-    L = nw_truncation(T)
-    gamma = np.array([np.dot(demeaned[:T-j], demeaned[j:]) / T for j in range(L + 1)])
-    weights = np.array([1 - j / (L + 1) for j in range(1, L + 1)])
-    nw_var = (gamma[0] + 2 * np.dot(weights, gamma[1:])) / T
-    return max(nw_var, 1e-12)
+from modules.stats_utils import nw_truncation, ols_nwhac
+from modules.stats_utils import nw_tstat as _su_nw_tstat
 
 
 def nw_tstat_mean(x: np.ndarray) -> tuple:
-    """
-    NW HAC t-stat：t = mean(x) / sqrt(NW_Var(mean(x)))
-    Returns (t_stat, mean_x, se_nw)
-    """
-    x = np.asarray(x, dtype=float)
-    x = x[~np.isnan(x)]
-    if len(x) < 4:
-        return np.nan, np.nan, np.nan
-    mu = x.mean()
-    se = float(np.sqrt(nw_variance(x)))
-    t = mu / se if se > 0 else np.nan
-    return t, mu, se
+    """NW HAC t-stat：t = mean(x) / sqrt(NW_Var(mean(x))). Returns (t_stat, mean_x, se_nw)."""
+    r = _su_nw_tstat(pd.Series(np.asarray(x, dtype=float)))
+    return r["t_stat"], r["mean"], r["se"]
 
 
 def ic_nw_tstat(ic_series: pd.Series) -> dict:
@@ -163,50 +139,8 @@ def ic_nw_tstat(ic_series: pd.Series) -> dict:
     }
 
 
-def ols_nwhac(y: np.ndarray, X: np.ndarray) -> dict:
-    """
-    OLS with Newey-West HAC standard errors (no statsmodels).
-    X should include constant column.
-    Returns dict: coefficients, se_nw, t_stats, L, T
-    """
-    y = np.asarray(y, dtype=float)
-    X = np.asarray(X, dtype=float)
-    mask = ~(np.isnan(y) | np.any(np.isnan(X), axis=1))
-    y, X = y[mask], X[mask]
-    T = len(y)
-    if T < 6:
-        k = X.shape[1]
-        nan_arr = np.full(k, np.nan)
-        return {"beta": nan_arr, "se_nw": nan_arr, "t_stat": nan_arr,
-                "T": T, "L": 0, "alpha": np.nan, "alpha_se": np.nan, "alpha_t": np.nan}
-
-    XtX_inv = np.linalg.pinv(X.T @ X)
-    beta = XtX_inv @ X.T @ y
-    residuals = y - X @ beta
-    L = nw_truncation(T)
-
-    # Newey-West long-run covariance matrix S
-    meat = np.zeros((X.shape[1], X.shape[1]))
-    Xe = X * residuals[:, np.newaxis]
-    meat += Xe.T @ Xe
-    for j in range(1, L + 1):
-        w = 1 - j / (L + 1)
-        cross = Xe[j:].T @ Xe[:T - j]
-        meat += w * (cross + cross.T)
-    V_nw = XtX_inv @ meat @ XtX_inv
-    se_nw = np.sqrt(np.diag(V_nw))
-    t_stat = np.where(se_nw > 0, beta / se_nw, np.nan)
-
-    return {
-        "beta":     beta,
-        "se_nw":    se_nw,
-        "t_stat":   t_stat,
-        "T":        T,
-        "L":        L,
-        "alpha":    beta[0],
-        "alpha_se": se_nw[0],
-        "alpha_t":  t_stat[0],
-    }
+# ols_nwhac 已於檔案上方改為 `from modules.stats_utils import ols_nwhac`，
+# 此處不再重複定義（原本兩份實作經數值核對為同一公式，見上方說明）。
 
 # ═════════════════════════════════════════════════════════════════════════════
 # 模組匯入（lazy，避免 import 錯誤中止腳本）

@@ -32,40 +32,21 @@ from scipy import stats as scipy_stats
 
 
 # ─────────────────────────────────────────────────────────────────────────────
-# Internal helpers (mirrored from run_chapter5_results.py for independence)
+# PROJECT_AUDIT_2026.md C3/C4/C12: this used to be an independent mirror of
+# run_chapter5_results.py's NW-HAC helpers. Numerically verified (multiple
+# random series, bit-for-bit identical t/mean/se) to be the same formula as
+# modules/stats_utils.py, so now delegates there instead of maintaining a
+# third copy. _nw_tstat's (t, mean, se, L) return shape is unchanged for
+# the one caller below.
 # ─────────────────────────────────────────────────────────────────────────────
 
-def _nw_truncation(T: int) -> int:
-    return max(1, floor(4 * (T / 100) ** (2 / 9)))
-
-
-def _nw_variance_of_mean(x: np.ndarray) -> float:
-    """Newey-West HAC variance of the sample mean."""
-    x = np.asarray(x, dtype=float)
-    x = x[~np.isnan(x)]
-    T = len(x)
-    if T < 4:
-        return np.nan
-    dm = x - x.mean()
-    L = _nw_truncation(T)
-    gamma = np.array([np.dot(dm[:T - j], dm[j:]) / T for j in range(L + 1)])
-    w = np.array([1 - j / (L + 1) for j in range(1, L + 1)])
-    nw_var = (gamma[0] + 2 * np.dot(w, gamma[1:])) / T
-    return max(float(nw_var), 1e-16)
+from modules.stats_utils import nw_tstat as _su_nw_tstat
 
 
 def _nw_tstat(x: np.ndarray) -> tuple:
     """Returns (t_stat, mean, se_nw, L)."""
-    x = np.asarray(x, dtype=float)
-    x = x[~np.isnan(x)]
-    T = len(x)
-    if T < 4:
-        return np.nan, np.nan, np.nan, 0
-    mu = float(x.mean())
-    se = float(np.sqrt(_nw_variance_of_mean(x)))
-    t = mu / se if se > 1e-16 else np.nan
-    L = _nw_truncation(T)
-    return t, mu, se, L
+    r = _su_nw_tstat(pd.Series(np.asarray(x, dtype=float)))
+    return r["t_stat"], r["mean"], r["se"], r["L"]
 
 
 def _cross_sectional_ols(y: np.ndarray, X: np.ndarray) -> np.ndarray:
