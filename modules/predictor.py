@@ -8,7 +8,6 @@ import pandas as pd
 import numpy as np
 from typing import Tuple
 import warnings
-warnings.filterwarnings("ignore")
 
 from modules.feature_engineering import (
     build_full_features, get_feature_columns
@@ -219,10 +218,12 @@ def train_random_forest(df: pd.DataFrame, target: str = "label_1d") -> Tuple:
         min_samples_leaf=10,
         random_state=42
     )
-    model.fit(X_train, y_train)
+    with warnings.catch_warnings():
+        warnings.filterwarnings("ignore")
+        model.fit(X_train, y_train)
 
-    # 評估準確率
-    y_pred = model.predict(X_test)
+        # 評估準確率
+        y_pred = model.predict(X_test)
     acc = accuracy_score(y_test, y_pred)
 
     # 特徵重要度
