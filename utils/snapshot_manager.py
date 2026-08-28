@@ -281,4 +281,14 @@ def verify_snapshot_hash(snapshot_dir: str) -> Dict[str, bool]:
             stored = stored_hashes.get(fname)
             results[fname] = (current_hash == stored) if stored else None
 
+    # Codex review: verify_snapshot_hash() only scanned raw_csv/, so a
+    # tampered universe_data.pkl would pass this check even though
+    # load_snapshot() itself verifies it. Check it here too so both entry
+    # points agree.
+    pkl_path = snap / "universe_data.pkl"
+    if pkl_path.exists():
+        current_hash = _file_sha256(str(pkl_path))
+        stored = stored_hashes.get(pkl_path.name)
+        results[pkl_path.name] = (current_hash == stored) if stored else None
+
     return results
