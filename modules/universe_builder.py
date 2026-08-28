@@ -78,9 +78,13 @@ def build_universe(
             excluded[ticker] = f"資料不足（{n_days} 日，需 >={min_days} 日）"
             continue
 
-        avg_vol_k = df["volume"].mean() / 1_000
+        # PROJECT_AUDIT_2026.md C6: 流動性篩選只能用「篩選當下已知」的資料，
+        # 不能用整個 period 的平均量（那等於用尚未發生的未來成交量來決定
+        # 期初就該不該入選，屬 look-ahead bias）。改用 period 最前面
+        # min_days 個交易日（篩選門檻本身要求的最短資料量）的平均量。
+        avg_vol_k = df["volume"].iloc[:min_days].mean() / 1_000
         if avg_vol_k < min_avg_volume_k:
-            excluded[ticker] = f"流動性不足（日均 {avg_vol_k:.0f} 千股，需 >={min_avg_volume_k:.0f}）"
+            excluded[ticker] = f"流動性不足（前 {min_days} 日均 {avg_vol_k:.0f} 千股，需 >={min_avg_volume_k:.0f}）"
             continue
 
         universe_data[ticker] = df
