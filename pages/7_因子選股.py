@@ -186,9 +186,12 @@ if mode == "🔍 選股篩選器":
 else:
     from modules.universe_builder import build_universe, get_ticker_coverage_df
     from modules.cross_sectional_ic import (
-        calc_all_factors_cross_ic, ic_stats_to_df, get_report_section_data, FACTOR_LABELS
+        ic_stats_to_df, get_report_section_data, FACTOR_LABELS
     )
-    from modules.factor_portfolio import run_factor_portfolio_analysis
+    from modules.factor_portfolio import (
+        calc_all_factors_execution_aligned_ic,
+        run_factor_portfolio_analysis,
+    )
 
     if not run_btn:
         st.markdown("### 👈 選擇行業 / 因子後按下「開始研究」")
@@ -260,11 +263,12 @@ else:
 
     # ── Step 2: 計算截面 IC ─────────────────────────────────────────────────
     with st.spinner("計算截面 IC（所有五個因子）..."):
-        all_ic = calc_all_factors_cross_ic(
+        all_ic = calc_all_factors_execution_aligned_ic(
             universe_data, lag=lag, min_stocks=min_stocks
         )
 
     ic_series_all = all_ic.pop("_ic_series", {})
+    all_ic.pop("_execution_schedules", None)
 
     # IC 統計表
     section_header("截面 IC 統計（全部因子）")

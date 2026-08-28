@@ -303,3 +303,19 @@ Q1 組之 NW HAC t 統計量為 1.4095，未達左尾臨界值（t<−1.645）�
 **H3（Jensen Alpha）：** 以 EPS 年增率因子建構分量組合，Q5 年化 α=102.84%（NW HAC t=2.234，p=0.013），在單尾 α=0.05 下拒絕 H0: α_Q5≤0，支持 H1: α_Q5>0；Q1 年化 α=44.84%（t=1.410），無法拒絕 H0: α_Q1≥0。Q1 維持正值且不顯著負值之 α，與短端執行障礙假說一致，顯示台灣市場放空障礙使低 EPS 成長率股票之錯誤定價持續存在。穩健性分析確認上述結論對無風險利率假設具有穩健性。
 
 上述結果受 V1 探索性設計之固有侷限制約，包括樣本規模（16 股）、研究期間（2 年）及未校正多重比較等，不具直接推論代表性。相關侷限之詳細討論及 V2 研究設計建議詳見第六章。
+# 2026-08-02 Critical Remediation Notice
+
+This chapter is a historical draft. Formal conclusions are superseded by
+`results/remediation/critical_remediation_report.md` and
+`results/remediation/manifest.json`.
+
+The V1 universe is a hardcoded 16-stock selected survivor list, not a complete
+point-in-time Taiwan equity universe. Complete historical delisted, merged,
+renamed, and suspended security data is not available in this repository, so
+the bias-controlled result is blocked and no market-wide Taiwan equity
+conclusion is supported.
+
+Clean-environment verification is also blocked in this sandbox because outbound
+PyPI access is denied; see `results/remediation/clean_env_install_status.json`.
+
+---

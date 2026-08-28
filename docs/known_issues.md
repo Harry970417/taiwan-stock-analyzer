@@ -1,3 +1,16 @@
+# 2026-08-02 Critical Remediation Status
+
+This section supersedes older status rows below where they conflict.
+
+| Issue | Current status | Evidence |
+|-------|----------------|----------|
+| LAB-1 forward return lag semantics | Resolved | `modules/cross_sectional_ic.py` now uses `close.shift(-lag) / close - 1`; lag-5 and lag-20 numeric tests were added. |
+| SB-1 V1 survivorship bias | Partially remediated / still unresolved | V1 is now disclosed as an existing selected survivor list. Bias-controlled performance is blocked because complete historical delisted, merged, renamed, and suspended securities are unavailable in this repo. |
+| REP-1 environment mismatch | Remediated for main runtime | Main metadata is restored to the documented Python 3.11 / `pandas<3` / `numpy<2` baseline. The Python 3.14.5 remediation replay dependency set remains isolated in `requirements.lock.txt`; any claim that round 1/2 outputs are verified under Python 3.11 still requires re-run evidence. |
+| Old result provenance | Remediated | Old `results/` outputs are preserved and marked in `results/remediation/provenance.json`. |
+
+---
+
 # Known Issues
 # Taiwan Stock Analyzer — Phase 0 已知問題清單
 

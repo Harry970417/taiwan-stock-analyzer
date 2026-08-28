@@ -320,3 +320,28 @@ Lo, A. W., Mamaysky, H., & Wang, J. (2000). Foundations of technical analysis: C
 Newey, W. K., & West, K. D. (1987). A simple, positive semi-definite, heteroscedasticity and autocorrelation consistent covariance matrix. *Econometrica*, 55(3), 703–708.
 
 Rouwenhorst, K. G. (1998). International momentum strategies. *Journal of Finance*, 53(1), 267–284.
+# 2026-08-02 Critical Remediation Notice
+
+This notice supersedes the older pilot-result wording below.
+
+- Formal reproducible command: `python scripts/run_critical_remediation.py`
+- Authoritative machine-readable manifest: `results/remediation/manifest.json`
+- Clean-environment verification is blocked in this sandbox because outbound
+  PyPI access is denied; see `results/remediation/clean_env_install_status.json`.
+- Old outputs in `results/` are preserved in place and marked as
+  `superseded` or `invalidated` in `results/remediation/provenance.json`.
+- V1 uses only the hardcoded 16-stock selected survivor list:
+  `2330.TW`, `2317.TW`, `2454.TW`, `2308.TW`, `2382.TW`, `2303.TW`,
+  `2412.TW`, `2881.TW`, `2882.TW`, `2886.TW`, `1301.TW`, `1303.TW`,
+  `2002.TW`, `2912.TW`, `2207.TW`, `6505.TW`.
+- This list is not a complete point-in-time Taiwan equity universe. The source
+  data in this repository does not include complete historical delisted,
+  merged, renamed, or suspended companies, nor point-in-time liquidity
+  eligibility.
+- Therefore survivorship bias is not eliminated. The corrected conclusion is
+  limited to the existing selected universe and must not be interpreted as a
+  full Taiwan stock market result.
+- The bias-controlled result layer is blocked and no formal bias-controlled
+  performance numbers were generated.
+
+---
