@@ -1,7 +1,7 @@
 """
 modules/universe_pit.py
 ========================
-Point-in-Time (PIT) universe construction for Phase 1.
+Universe construction helpers for Phase 1.
 
 Approximation strategy (Option B from phase1_execution_plan.md §8):
   Uses FinMind TaiwanStockInfo (listing date available) as the source.
@@ -12,6 +12,9 @@ Approximation strategy (Option B from phase1_execution_plan.md §8):
 Known limitation: SB-1 (partially mitigated) — delisted stocks before
 the data window may still be missing, but this is disclosed in the
 reproducibility_manifest.md.
+
+Important: V1_TICKERS is the existing selected survivor list, not a complete
+point-in-time universe.
 """
 
 import time
@@ -30,6 +33,49 @@ V1_TICKERS = [
     "1301.TW", "1303.TW", "2002.TW", "2912.TW", "2207.TW",
     "6505.TW",
 ]
+
+UNIVERSE_SNAPSHOT_COLUMNS = [
+    "security_id",
+    "ticker",
+    "listed_at",
+    "delisted_at",
+    "eligible_from",
+    "eligible_to",
+    "market",
+    "liquidity_rule",
+    "selection_reason",
+    "source",
+    "as_of_date",
+]
+
+
+def build_v1_selected_universe_snapshot(
+    start_date: str,
+    end_date: str,
+    as_of_date: str,
+) -> pd.DataFrame:
+    """Return the required schema for the existing selected V1 universe."""
+    rows = []
+    for ticker in V1_TICKERS:
+        rows.append({
+            "security_id": ticker.split(".", 1)[0],
+            "ticker": ticker,
+            "listed_at": "",
+            "delisted_at": "",
+            "eligible_from": start_date,
+            "eligible_to": end_date,
+            "market": "TWSE suffix assumption (.TW)",
+            "liquidity_rule": "No historical ex-ante liquidity rule encoded",
+            "selection_reason": "Existing hardcoded V1 selected survivor list",
+            "source": "modules.universe_pit.V1_TICKERS",
+            "as_of_date": as_of_date,
+        })
+    return pd.DataFrame(rows, columns=UNIVERSE_SNAPSHOT_COLUMNS)
+
+
+def empty_bias_controlled_universe_snapshot() -> pd.DataFrame:
+    """Return only the schema when complete historical universe data is absent."""
+    return pd.DataFrame(columns=UNIVERSE_SNAPSHOT_COLUMNS)
 
 
 # ─────────────────────────────────────────────────────────────────────────────
