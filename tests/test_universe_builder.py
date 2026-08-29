@@ -43,3 +43,36 @@ def test_liquidity_filter_passes_a_ticker_liquid_from_the_start(monkeypatch):
     result = build_universe(["EARLY_LIQUID"], min_days=60, min_avg_volume_k=500)
 
     assert "EARLY_LIQUID" in result["data"]
+
+
+def test_warmup_period_used_for_eligibility_is_excluded_from_returned_data(monkeypatch):
+    # 2026-08-29 full C6 fix: the min_days window used to decide eligibility
+    # must not also appear in the data handed to downstream IC/portfolio
+    # analysis, or that analysis still implicitly uses information from
+    # later in the same window for the earliest dates in it.
+    df = _synthetic_df(n_days=300, early_volume=2_000_000, late_volume=2_000_000, split=60)
+
+    monkeypatch.setattr(
+        "modules.universe_builder.get_stock_data",
+        lambda ticker, period="2y", force_refresh=False: df,
+    )
+
+    result = build_universe(["EARLY_LIQUID"], min_days=60, min_avg_volume_k=500)
+
+    returned = result["data"]["EARLY_LIQUID"]
+    assert len(returned) == 300 - 60, "the first min_days rows must be dropped from the returned data"
+    assert returned["date"].min() > df["date"].iloc[59], "returned data must start strictly after the warmup window"
+
+
+def test_ticker_with_exactly_min_days_of_history_is_excluded_not_returned_empty(monkeypatch):
+    df = _synthetic_df(n_days=60, early_volume=2_000_000, late_volume=2_000_000, split=60)
+
+    monkeypatch.setattr(
+        "modules.universe_builder.get_stock_data",
+        lambda ticker, period="2y", force_refresh=False: df,
+    )
+
+    result = build_universe(["JUST_ENOUGH"], min_days=60, min_avg_volume_k=500)
+
+    assert "JUST_ENOUGH" not in result["data"], "trimming the warmup period leaves nothing to analyze -- must be excluded, not stored as an empty frame"
+    assert "JUST_ENOUGH" in result["excluded"]

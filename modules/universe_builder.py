@@ -82,20 +82,22 @@ def build_universe(
         # 不能用整個 period 的平均量（那等於用尚未發生的未來成交量來決定
         # 期初就該不該入選，屬 look-ahead bias）。改用 period 最前面
         # min_days 個交易日（篩選門檻本身要求的最短資料量）的平均量。
-        #
-        # 已知殘留限制（2026-08-29 Codex review 指出，尚未修復，見
-        # CLAUDE_AUTONOMOUS_WORK/reports 對應報告）：universe 是否納入該
-        # 股票，仍是用整個 period 最前面 min_days 天「合起來」判斷，這
-        # min_days 天本身若被後續 IC/portfolio 分析使用，則該區間內任一
-        # 交易日（例如第 10 天）的分析仍隱含了第 11~min_days 天才會發生
-        # 的成交量資訊。相較修正前（整個研究期間都受影響）已大幅縮小
-        # look-ahead 的範圍（現在只影響最前面 min_days 天，而非整個
-        # period），但不是完全消除。徹底修復需要把這 min_days 天的暖身期
-        # 從下游分析樣本中排除，但那會改變分析樣本大小，進而可能改變已
-        # 鎖定的論文 Table 5-x 數字，因此未自行實作，留待使用者決定。
         avg_vol_k = df["volume"].iloc[:min_days].mean() / 1_000
         if avg_vol_k < min_avg_volume_k:
             excluded[ticker] = f"流動性不足（前 {min_days} 日均 {avg_vol_k:.0f} 千股，需 >={min_avg_volume_k:.0f}）"
+            continue
+
+        # 2026-08-29（使用者決定徹底修復，見
+        # CLAUDE_AUTONOMOUS_WORK/reports 對應報告）：入選判斷本身用了
+        # 最前面 min_days 天「合起來」的資訊，若這段暖身期繼續留在下游
+        # IC/portfolio 分析樣本裡，該區間內任一交易日的分析仍隱含後續
+        # 才發生的成交量資訊。徹底修復：把這 min_days 天從下游分析樣本
+        # 中剔除，只保留 min_days+1 天之後、入選當下已確定合格的資料。
+        # 這會縮小分析樣本（產生新的入選日期分佈），因此本次修復刻意
+        # 不直接覆寫任何已鎖定的論文結果，而是先產出對照報告供人工核對。
+        df = df.iloc[min_days:].reset_index(drop=True)
+        if df.empty:
+            excluded[ticker] = f"扣除 {min_days} 天暖身期後無剩餘資料"
             continue
 
         universe_data[ticker] = df
