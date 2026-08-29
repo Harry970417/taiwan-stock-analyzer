@@ -95,9 +95,13 @@ def build_universe(
         # 中剔除，只保留 min_days+1 天之後、入選當下已確定合格的資料。
         # 這會縮小分析樣本（產生新的入選日期分佈），因此本次修復刻意
         # 不直接覆寫任何已鎖定的論文結果，而是先產出對照報告供人工核對。
+        # Codex review: min_days 原本的用意是「篩選 + 下游分析都需要的
+        # 最少資料量」，不是只保證能算出一次暖身期均量。扣除暖身期後，
+        # 剩餘資料一樣要 >= min_days，否則下游分析拿到的樣本太短（極端
+        # 情況：剛好 min_days+1 天歷史的股票，扣除後只剩 1 天）。
         df = df.iloc[min_days:].reset_index(drop=True)
-        if df.empty:
-            excluded[ticker] = f"扣除 {min_days} 天暖身期後無剩餘資料"
+        if len(df) < min_days:
+            excluded[ticker] = f"扣除 {min_days} 天暖身期後剩餘資料不足（{len(df)} 日，需 >={min_days} 日）"
             continue
 
         universe_data[ticker] = df

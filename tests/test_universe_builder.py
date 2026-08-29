@@ -76,3 +76,39 @@ def test_ticker_with_exactly_min_days_of_history_is_excluded_not_returned_empty(
 
     assert "JUST_ENOUGH" not in result["data"], "trimming the warmup period leaves nothing to analyze -- must be excluded, not stored as an empty frame"
     assert "JUST_ENOUGH" in result["excluded"]
+
+
+def test_ticker_with_barely_more_than_min_days_is_excluded_not_just_nonempty(monkeypatch):
+    # Codex review: the original fix only checked `df.empty`, so a ticker
+    # with e.g. 61 days (min_days=60) would leave a 1-row post-trim frame
+    # and still pass -- not enough data for meaningful downstream analysis.
+    # min_days is the minimum required for BOTH the eligibility window and
+    # the remaining analysis window, so this must now be excluded too.
+    df = _synthetic_df(n_days=61, early_volume=2_000_000, late_volume=2_000_000, split=60)
+
+    monkeypatch.setattr(
+        "modules.universe_builder.get_stock_data",
+        lambda ticker, period="2y", force_refresh=False: df,
+    )
+
+    result = build_universe(["BARELY_MORE"], min_days=60, min_avg_volume_k=500)
+
+    assert "BARELY_MORE" not in result["data"]
+    assert "BARELY_MORE" in result["excluded"]
+    assert "不足" in result["excluded"]["BARELY_MORE"]
+
+
+def test_ticker_with_exactly_double_min_days_passes(monkeypatch):
+    # Boundary check: 2*min_days total history leaves exactly min_days rows
+    # after trimming, which should just barely pass.
+    df = _synthetic_df(n_days=120, early_volume=2_000_000, late_volume=2_000_000, split=60)
+
+    monkeypatch.setattr(
+        "modules.universe_builder.get_stock_data",
+        lambda ticker, period="2y", force_refresh=False: df,
+    )
+
+    result = build_universe(["JUST_DOUBLE"], min_days=60, min_avg_volume_k=500)
+
+    assert "JUST_DOUBLE" in result["data"]
+    assert len(result["data"]["JUST_DOUBLE"]) == 60
