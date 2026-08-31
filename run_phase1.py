@@ -324,7 +324,12 @@ def step_e_h2a(ic_series_dict: dict, dirs: dict) -> dict:
 
     if not result["icir_table"].empty:
         _save_csv(result["icir_table"], dirs["step_d"] / "table_d1_icir_comparison.csv")
-        _log(f"  ICIR table:\n{result['icir_table'][['label','mean_ic','icir','t_nw','p_nw']].to_string(index=False)}")
+        # t_nw/p_nw only exist when run_h2a() had enough valid data to run the
+        # NW-HAC test (e.g. institutional-flow factors with no valid rows for
+        # this universe are skipped upstream and never get those columns).
+        _cols = [c for c in ["label", "mean_ic", "icir", "t_nw", "p_nw"]
+                 if c in result["icir_table"].columns]
+        _log(f"  ICIR table:\n{result['icir_table'][_cols].to_string(index=False)}")
 
     for pair_name, pair_res in [("fi_vs_it", result["fi_vs_it"]), ("it_vs_dl", result["it_vs_dl"])]:
         if pair_res:
