@@ -4,9 +4,27 @@ modules/universe_pit.py
 Universe construction helpers for Phase 1.
 
 Approximation strategy (Option B from phase1_execution_plan.md §8):
-  Uses FinMind TaiwanStockInfo (listing date available) as the source.
-  Delisting dates are NOT available from free APIs; delisted stocks whose
-  OHLCV data ends naturally are handled by the missing-data filter in
+  Uses FinMind TaiwanStockInfo as the source.
+
+  **KNOWN BUG, confirmed 2026-08-31**: the previous version of this docstring
+  claimed TaiwanStockInfo's `date` column is the listing date. It is NOT.
+  Empirically, `date` is a snapshot/last-updated timestamp — for actively
+  traded stocks it is close to "today" (e.g. 2330 TSMC, listed 1994, returns
+  `date=2026-08-31`). Filtering on `date <= as_of_cutoff` therefore silently
+  returns an empty or near-empty universe for any historical cutoff instead
+  of raising an error — this is exactly the "silent fallback masking bad
+  data" failure mode. `build_pit_universe()` now raises a loud warning when
+  the resulting universe is suspiciously small relative to the input so this
+  can't fail silently again.
+
+  **No real listing-date field has been found in the free FinMind
+  TaiwanStockInfo endpoint.** True point-in-time (listing + delisting)
+  universe construction is NOT implemented by this module despite the
+  function names suggesting otherwise — see `UNIVERSE_CONTRACT.md` at the
+  repo root for the full disclosure and what would be needed to fix this.
+
+  Delisting dates are NOT available from free APIs either; delisted stocks
+  whose OHLCV data ends naturally are handled by the missing-data filter in
   cross_sectional_ic.calc_cross_sectional_ic_series().
 
 Known limitation: SB-1 (partially mitigated) — delisted stocks before
@@ -174,6 +192,20 @@ def build_pit_universe(
 
     # Keep only 4-digit numeric codes (exclude warrants, REITs, preferreds)
     ids = [s for s in ids if s.isdigit() and len(s) == 4]
+
+    # Guard against the "date is not actually a listing date" failure mode:
+    # if the PIT filter drops almost everything, that's a data-assumption
+    # bug, not a genuinely tiny market. Fail loudly instead of returning a
+    # near-empty universe silently.
+    n_before_date_filter = len(df) if date_col is None else stock_info_df.shape[0]
+    if date_col is not None and n_before_date_filter > 0 and len(ids) < 0.1 * n_before_date_filter:
+        raise RuntimeError(
+            f"[universe_pit] PIT date filter kept only {len(ids)}/{n_before_date_filter} "
+            f"rows using column '{date_col}' — this almost certainly means '{date_col}' "
+            "is not a real listing date (see module docstring / UNIVERSE_CONTRACT.md), "
+            "not that the market genuinely had this few listings. Refusing to silently "
+            "return a near-empty universe."
+        )
     return ids
 
 
