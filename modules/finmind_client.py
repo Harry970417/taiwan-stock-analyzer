@@ -8,6 +8,7 @@
 #   - 完整錯誤處理 + Graceful Degradation（無 Token 不 crash）
 #   - 高階資料函式：回傳 pd.DataFrame，供 panel builder 使用
 
+import hashlib
 import os
 import time
 import warnings
@@ -18,6 +19,11 @@ from typing import Optional
 import numpy as np
 import pandas as pd
 import requests
+
+# ponytail: disk cache keyed by request params, so a rate-limited pipeline
+# rerun resumes instead of re-fetching stocks it already got. Upgrade to a
+# TTL/eviction policy if the cache ever grows large enough to matter.
+_CACHE_DIR = Path(__file__).resolve().parent.parent / ".cache" / "finmind"
 
 # ── .env 載入（python-dotenv 選用，若未安裝則只讀 os.environ）─────────────────
 _ENV_PATH = Path(__file__).resolve().parent.parent / ".env"
@@ -80,6 +86,12 @@ class FinMindClient:
             time.sleep(_MIN_INTERVAL - elapsed)
         self._last_call = time.monotonic()
 
+    @staticmethod
+    def _cache_path(dataset: str, stock_id: str, start_date: str, end_date: str) -> Path:
+        key = f"{dataset}|{stock_id}|{start_date}|{end_date}"
+        digest = hashlib.sha256(key.encode()).hexdigest()[:24]
+        return _CACHE_DIR / f"{digest}.parquet"
+
     def _request(
         self,
         dataset: str,
@@ -88,12 +100,22 @@ class FinMindClient:
         end_date: str = "",
     ) -> pd.DataFrame:
         """
-        帶 retry 的底層 GET 請求。
+        帶 retry 的底層 GET 請求，前面加一層本地磁碟快取（依 dataset+stock_id+
+        start_date+end_date 為 key）。同一份請求只成功抓過一次資料就不再重打
+        FinMind API——這讓因 rate limit 中斷的 pipeline 重跑時可以跳過已完成
+        的股票，只補真正還沒抓到的部分。
 
         Returns
         -------
         pd.DataFrame  成功時回傳資料；失敗時回傳空 DataFrame（不拋例外）
         """
+        cache_file = self._cache_path(dataset, stock_id, start_date, end_date)
+        if cache_file.exists():
+            try:
+                return pd.read_parquet(cache_file)
+            except Exception:
+                pass  # 快取檔損毀，當作沒快取，往下正常打 API
+
         params: dict = {
             "dataset":    dataset,
             "data_id":    stock_id,
@@ -123,7 +145,15 @@ class FinMindClient:
                     return pd.DataFrame()
 
                 records = body.get("data", [])
-                return pd.DataFrame(records) if records else pd.DataFrame()
+                if not records:
+                    return pd.DataFrame()
+                df = pd.DataFrame(records)
+                try:
+                    _CACHE_DIR.mkdir(parents=True, exist_ok=True)
+                    df.to_parquet(cache_file)
+                except Exception:
+                    pass  # 快取寫入失敗不影響本次請求結果，只是下次不能命中快取
+                return df
 
             except requests.exceptions.Timeout:
                 if attempt < _MAX_RETRIES - 1:

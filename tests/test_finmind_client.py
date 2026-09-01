@@ -12,6 +12,15 @@ import requests
 from modules.finmind_client import FinMindClient, get_roe, get_dealer_data
 
 
+@pytest.fixture(autouse=True)
+def _isolate_finmind_cache(monkeypatch, tmp_path):
+    """每個測試用獨立暫存快取目錄，避免跨測試共用真實 .cache/finmind/ 互相污染
+    （多個 get_* 函式底層共用同一個 dataset+stock_id+start_date 的快取key是設計
+    本意，但測試各自mock不同回應，需要各自獨立的快取空間）。"""
+    import modules.finmind_client as fm
+    monkeypatch.setattr(fm, "_CACHE_DIR", tmp_path / "finmind_cache")
+
+
 def test_token_loading(monkeypatch):
     """Token 從環境變數正確載入 → has_token=True"""
     monkeypatch.setenv("FINMIND_TOKEN", "fake_token_123")
@@ -188,3 +197,42 @@ def test_dealer_net_buy_aggregation(monkeypatch):
     assert not df.empty
     # Dealer_Self(+5000) + Dealer_Hedging(-2000) = +3000
     assert df["net_buy_sell"].sum() == 3000, "自營商合計應為 5000 + (-2000) = 3000"
+
+
+def test_request_cache_avoids_refetch(monkeypatch):
+    """同一組(dataset,stock_id,start_date,end_date)第二次呼叫不再打API，直接吃快取。"""
+    monkeypatch.setenv("FINMIND_TOKEN", "fake_token")
+
+    fake_response = MagicMock()
+    fake_response.raise_for_status = MagicMock()
+    fake_response.json.return_value = {
+        "status": 200,
+        "data": [{"date": "2024-01-02", "stock_id": "2330", "value": 1.23}],
+    }
+
+    with patch("modules.finmind_client.requests.get", return_value=fake_response) as mock_get:
+        client = FinMindClient(token="fake_token")
+        df1 = client._request("TaiwanStockPER", "2330", "2024-01-01")
+        assert mock_get.call_count == 1
+        df2 = client._request("TaiwanStockPER", "2330", "2024-01-01")
+        assert mock_get.call_count == 1, "第二次相同請求應命中快取，不應再打API"
+
+    pd.testing.assert_frame_equal(df1, df2)
+
+
+def test_request_cache_key_differs_by_stock_id(monkeypatch):
+    """不同stock_id不能共用快取（避免快取key碰撞回錯資料）。"""
+    monkeypatch.setenv("FINMIND_TOKEN", "fake_token")
+
+    fake_response = MagicMock()
+    fake_response.raise_for_status = MagicMock()
+    fake_response.json.return_value = {
+        "status": 200,
+        "data": [{"date": "2024-01-02", "stock_id": "X", "value": 1.0}],
+    }
+
+    with patch("modules.finmind_client.requests.get", return_value=fake_response) as mock_get:
+        client = FinMindClient(token="fake_token")
+        client._request("TaiwanStockPER", "2330", "2024-01-01")
+        client._request("TaiwanStockPER", "2454", "2024-01-01")
+        assert mock_get.call_count == 2, "不同stock_id必須各自打API，不能共用快取"

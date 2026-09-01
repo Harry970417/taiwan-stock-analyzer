@@ -53,3 +53,4 @@ results/data/*.pkl
 
 # Run logs (transient)
 results/*.log
+.cache/
