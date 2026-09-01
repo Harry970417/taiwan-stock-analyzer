@@ -7,6 +7,7 @@ import pandas as pd
 import pytest
 
 import modules.factor_portfolio as factor_portfolio_module
+from modules.multi_factor import compute_factor_matrix
 from modules.cross_sectional_ic import (
     build_factor_panel,
     build_return_panel,
@@ -665,3 +666,71 @@ class TestFactorPortfolio:
         assert not q_df.empty
         ls_mean = q_df["LS"].dropna().mean()
         assert ls_mean > 0, f"正 IC 情境下 L/S 均值應 > 0，得到 {ls_mean:.6f}"
+
+
+# ---------------------------------------------------------------------------
+# Factor Direction Contract — regression test
+#
+# 2026-09-01 direction audit（見 FACTOR_DIRECTION_CONTRACT.md）發現 N=50 樣本下
+# momentum/MACD/RSI 出現顯著負向 IC。這個測試不是驗證那個結果本身，而是驗證
+# IC 計算機制本身的方向沒有被意外反轉——用已知方向的合成資料，確認正相關給出
+# 正 IC、負相關給出負 IC，缺一都代表管線本身有 sign-flip bug。
+# ---------------------------------------------------------------------------
+
+class TestFactorDirectionContract:
+    def test_known_positive_relationship_gives_positive_ic(self):
+        """factor 與 forward return 同向排序時，IC 必須為正（無 sign-flip）。"""
+        dates = pd.date_range("2024-01-01", periods=30, freq="B")
+        tickers = [f"S{i}" for i in range(10)]
+        rng = np.random.RandomState(0)
+        factor_panel = pd.DataFrame(index=dates, columns=tickers, dtype=float)
+        return_panel = pd.DataFrame(index=dates, columns=tickers, dtype=float)
+        for d in dates:
+            ranks = rng.permutation(len(tickers))
+            factor_panel.loc[d] = ranks + rng.normal(0, 0.01, len(tickers))
+            return_panel.loc[d] = ranks * 0.001 + rng.normal(0, 0.0001, len(tickers))
+
+        ic_series = calc_cross_sectional_ic_series(factor_panel, return_panel, min_stocks=5)
+        assert ic_series.mean() > 0.5, (
+            f"已知正相關合成資料的平均IC應接近+1，實際={ic_series.mean():.3f}"
+            "——若此值為負，代表IC計算或factor/return對齊存在sign-flip bug"
+        )
+
+    def test_known_negative_relationship_gives_negative_ic(self):
+        """factor 與 forward return 反向排序時，IC 必須為負（confirm不是恆正的bug）。"""
+        dates = pd.date_range("2024-01-01", periods=30, freq="B")
+        tickers = [f"S{i}" for i in range(10)]
+        rng = np.random.RandomState(1)
+        factor_panel = pd.DataFrame(index=dates, columns=tickers, dtype=float)
+        return_panel = pd.DataFrame(index=dates, columns=tickers, dtype=float)
+        for d in dates:
+            ranks = rng.permutation(len(tickers))
+            factor_panel.loc[d] = ranks + rng.normal(0, 0.01, len(tickers))
+            return_panel.loc[d] = -ranks * 0.001 + rng.normal(0, 0.0001, len(tickers))
+
+        ic_series = calc_cross_sectional_ic_series(factor_panel, return_panel, min_stocks=5)
+        assert ic_series.mean() < -0.5, (
+            f"已知負相關合成資料的平均IC應接近-1，實際={ic_series.mean():.3f}"
+        )
+
+    def test_momentum_factor_matches_documented_formula(self):
+        """momentum = Close_t/Close_{t-20} - 1，正值代表上漲趨勢（見multi_factor.py docstring）。"""
+        dates = pd.date_range("2024-01-01", periods=40, freq="B")
+        # 純上漲價格序列：momentum 在第20日後應恆為正
+        uptrend = pd.DataFrame({
+            "date": dates,
+            "close": np.linspace(100, 150, len(dates)),
+            "volume": np.full(len(dates), 1_000_000),
+        })
+        factors = compute_factor_matrix(uptrend)
+        mom = factors["momentum"].dropna()
+        assert (mom > 0).all(), "純上漲價格序列的momentum因子必須全為正值（定義：Close_t/Close_{t-20}-1）"
+
+        downtrend = pd.DataFrame({
+            "date": dates,
+            "close": np.linspace(150, 100, len(dates)),
+            "volume": np.full(len(dates), 1_000_000),
+        })
+        factors_down = compute_factor_matrix(downtrend)
+        mom_down = factors_down["momentum"].dropna()
+        assert (mom_down < 0).all(), "純下跌價格序列的momentum因子必須全為負值"
