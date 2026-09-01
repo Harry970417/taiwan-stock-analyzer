@@ -10,21 +10,38 @@ fm.fontManager.addfont(FONT_PATH)
 plt.rcParams["font.sans-serif"] = ["Microsoft JhengHei"]
 plt.rcParams["axes.unicode_minus"] = False
 
+import matplotlib.patches as mpatches
+from matplotlib.patches import FancyBboxPatch
+
 OUT = r"C:\Users\user\Desktop\推甄資料最新版\06_圖表與視覺素材"
 
-# 1. Factor significance summary (IC/ICIR, NW-HAC)
-df = pd.read_csv("exports/chapter5_results/table_5_3_ic_summary_nwhac.csv")
-fig, ax = plt.subplots(figsize=(9, 5.5))
-colors = ["#2b7a3f" if p < 0.10 else "#888888" for p in df["p_value（NW）"]]
-ax.barh(df["因子"], df["mean_IC"], color=colors)
-for i, (ic, t, p) in enumerate(zip(df["mean_IC"], df["t_stat（NW）"], df["p_value（NW）"])):
-    ax.text(ic + (0.001 if ic >= 0 else -0.001), i, f"t={t:.2f}, p={p:.3f}",
-            va="center", ha="left" if ic >= 0 else "right", fontsize=9)
-ax.axvline(0, color="black", linewidth=0.8)
-ax.set_xlabel("平均截面IC（NW-HAC修正）")
-ax.set_title("Taiwan Stock Analyzer：六因子IC顯著性總覽\n（綠色=p<0.10，灰色=不顯著；N=16, T依因子而異）")
-ax.set_ylabel("")
+# 1. Factor significance summary — N=50 TW50, all 11 factors, Bonferroni
+# (supersedes the original N=16 six-factor locked-Ch5 version; source is now
+# the tracked copy under results/data/, see README_ic_summary_provenance.md)
+ic = pd.read_csv("results/data/ic_summary_n50_tw50_2026-09-01.csv")
+ic = ic.sort_values('mean_ic')
+fig, ax = plt.subplots(figsize=(14, 8.5))
+colors = ['#b2182b' if sig else '#999999' for sig in ic['sig_bonferroni']]
+ax.barh(ic['factor'], ic['mean_ic'], color=colors)
+ax.axvline(0, color='black', lw=1)
+ax.set_xlabel('平均 IC（Newey-West HAC 修正）', fontsize=13)
+ax.set_title('Taiwan Stock Analyzer：N=50 全部 11 因子 IC 顯著性\n（紅色＝Bonferroni校正後顯著，灰色＝不顯著）', fontsize=16, fontweight='bold')
+ax.tick_params(axis='both', labelsize=12)
+# widen xlim well beyond the data range so p-value annotations at either end
+# never collide with the y-axis tick labels
+x_min, x_max = ic['mean_ic'].min(), ic['mean_ic'].max()
+x_range = x_max - x_min
+ax.set_xlim(x_min - 0.32 * x_range, x_max + 0.32 * x_range)
+for i, (v, p, sig) in enumerate(zip(ic['mean_ic'], ic['p_bonferroni'], ic['sig_bonferroni'])):
+    label = f"p={p:.3f}" + ("*" if sig else "")
+    offset = 0.06 * x_range
+    ax.text(v + (offset if v >= 0 else -offset), i, label, va='center',
+            ha='left' if v >= 0 else 'right', fontsize=10.5)
+red_patch = mpatches.Patch(color='#b2182b', label='Bonferroni顯著 (p<0.05)')
+gray_patch = mpatches.Patch(color='#999999', label='不顯著')
+ax.legend(handles=[red_patch, gray_patch], fontsize=11, loc='lower right')
 plt.tight_layout()
+plt.subplots_adjust(left=0.16)
 plt.savefig(f"{OUT}/tsa_factor_ic_significance.png", dpi=300)
 plt.close()
 
@@ -96,22 +113,33 @@ plt.tight_layout()
 plt.savefig(f"{OUT}/tsa_c6_before_after.png", dpi=300)
 plt.close()
 
-# 5. Architecture diagram (conceptual)
-fig, ax = plt.subplots(figsize=(10, 4.5))
-ax.axis("off")
-boxes = ["FinMind API\n(價格/財務/籌碼)", "資料驗證與\n快照(Snapshot)", "特徵工程\n(技術/基本面因子)",
-         "PIT Universe\n建構", "截面IC /\nFama-MacBeth", "五分位投組 /\nCAPM alpha", "Streamlit\n決策支援介面"]
-n = len(boxes)
-for i, b in enumerate(boxes):
-    x0 = i / n
-    ax.add_patch(plt.Rectangle((x0 + 0.01, 0.35), 1/n - 0.02, 0.3, fill=True,
-                                 facecolor="#eaf2f8", edgecolor="#2980b9"))
-    ax.text(x0 + (1/n)/2, 0.5, b, ha="center", va="center", fontsize=9)
-    if i < n - 1:
-        ax.annotate("", xy=(x0 + 1/n, 0.5), xytext=(x0 + 1/n - 0.02, 0.5),
-                     arrowprops=dict(arrowstyle="->", color="#2980b9"))
-ax.set_title("Taiwan Stock Analyzer：資料與研究管線架構", fontsize=12)
-ax.set_xlim(0, 1); ax.set_ylim(0, 1)
+# 5. Architecture diagram — vertical 6-node layout (supersedes the original
+# horizontal 7-box version; matches the current portfolio figure)
+fig, ax = plt.subplots(figsize=(12, 9))
+ax.set_xlim(0, 10); ax.set_ylim(0, 13); ax.axis('off')
+nodes = [
+    ("資料來源\nFinMind API / TWSE", "股價・財報・法人籌碼"),
+    ("驗證層\nAs-of Contract", "禁止 look-ahead，時序對齊"),
+    ("因子引擎\nFactor Engine", "技術・基本面・法人 11 因子"),
+    ("統計研究\nStatistical Research", "IC・Fama-MacBeth・NW-HAC"),
+    ("投組回測\nPortfolio Backtest", "Quintile Sort・交易成本"),
+    ("Streamlit / Reports", "互動介面・研究報告輸出"),
+]
+y0, dy, h = 11.5, 2.0, 1.3
+for i, (title, sub) in enumerate(nodes):
+    y = y0 - i * dy
+    box = FancyBboxPatch((1.5, y - h/2), 7, h, boxstyle="round,pad=0.08",
+                          fc="#dbe9f6", ec="#2166ac", lw=2)
+    ax.add_patch(box)
+    ax.text(5, y + 0.22, title, ha='center', va='center', fontsize=15, fontweight='bold')
+    ax.text(5, y - 0.32, sub, ha='center', va='center', fontsize=11, color="#333333")
+    if i < len(nodes) - 1:
+        ax.annotate('', xy=(5, y - h/2 - 0.15), xytext=(5, y - h/2 - dy + h/2 + 0.15),
+                     arrowprops=dict(arrowstyle='-|>', lw=2.5, color="#555555"))
+callouts = ["IC / ICIR", "Fama-MacBeth", "Newey-West HAC", "Portfolio Sort"]
+for i, c in enumerate(callouts):
+    ax.text(9.3, 7.3 - i*0.55, "• " + c, fontsize=11, color="#b2182b", ha='left')
+ax.set_title("Taiwan Stock Analyzer：系統架構", fontsize=18, fontweight='bold', pad=15)
 plt.tight_layout()
 plt.savefig(f"{OUT}/tsa_architecture.png", dpi=300)
 plt.close()
