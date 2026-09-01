@@ -1,0 +1,60 @@
+{
+  "run_id": "20260901_013523_d8c6ad0",
+  "download_timestamp": "2026-09-01T01:35:23.673500+00:00",
+  "api_provider": "yfinance+finmind",
+  "query_period": "2021-01-01/2026-06-19",
+  "ticker_universe": [],
+  "ticker_count": 0,
+  "git_commit_hash": "d8c6ad0",
+  "python_version": "3.14.5 (tags/v3.14.5:5607950, May 10 2026, 10:43:50) [MSC v.1944 64 bit (AMD64)]",
+  "platform": "Windows-11-10.0.26100-SP0",
+  "package_versions": {
+    "pandas": "3.0.3",
+    "numpy": "2.4.6",
+    "yfinance": "1.4.1",
+    "scipy": "1.17.1",
+    "statsmodels": "not_installed",
+    "scikit-learn": "not_installed"
+  },
+  "random_seeds": {
+    "numpy_seed": 42,
+    "sklearn_random_state": 42
+  },
+  "file_hashes": {},
+  "known_limitations": [
+    "SB-1: V1 16-stock list uses survivors only (see docs/known_issues.md)",
+    "DL-3: ffill limit=90 applied to fundamental data",
+    "REP-1: pandas/numpy versions may differ from original run"
+  ],
+  "universe_mode": "custom",
+  "lag": 1,
+  "n_quantiles": 5,
+  "min_stocks": 5,
+  "finmind_token": "absent",
+  "pipeline_results": {
+    "n_tickers": 50,
+    "n_downloaded": 50,
+    "factors": [
+      "momentum_20d",
+      "volume_ratio",
+      "rsi_14",
+      "macd_signal",
+      "roe",
+      "roa",
+      "eps_growth",
+      "revenue_yoy",
+      "foreign_net_buy",
+      "trust_net_buy",
+      "dealer_net_buy"
+    ],
+    "n_ic_factors": 11,
+    "h2b_status": "skipped",
+    "h1_models": [
+      "Model_A",
+      "Model_B",
+      "Model_C"
+    ],
+    "h3_status": "completed",
+    "h4_status": "completed"
+  }
+}
