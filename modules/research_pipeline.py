@@ -18,6 +18,7 @@ from modules.universe_builder import build_universe, get_ticker_coverage_df
 from modules.cross_sectional_ic import (
     build_factor_panel,
     build_return_panel,
+    build_trading_calendar,
     calc_cross_sectional_ic_series,
     calc_ic_stats,
     ic_stats_to_df,
@@ -25,6 +26,7 @@ from modules.cross_sectional_ic import (
     FACTOR_LABELS,
 )
 from modules.factor_portfolio import (
+    align_factor_panel_to_execution,
     build_quantile_portfolios,
     calc_cumulative_returns,
     calc_all_quantile_metrics,
@@ -317,6 +319,15 @@ class ResearchPipeline:
                         start_date,
                         client=self._fm_client,
                     )
+                    # 2026-09-07 Phase 1 A-G audit Finding C-1: flow data is date-stamped
+                    # with the trading day it occurred on but isn't published until after
+                    # that session's close -- pairing it unshifted against return_panel
+                    # implies trading same-day on not-yet-public information. Align to the
+                    # next executable close before it reaches run_ic_analysis/
+                    # run_factor_portfolio, matching the fix in scripts/run_phase1_execute.py.
+                    if not panel.empty:
+                        calendar = build_trading_calendar(self.universe_data)
+                        panel, _schedule = align_factor_panel_to_execution(panel, calendar, factor_name=fname)
 
                 else:
                     panel = pd.DataFrame()

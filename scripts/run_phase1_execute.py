@@ -243,12 +243,13 @@ def build_factor_panels(universe_data: dict, force_rebuild: bool = False) -> tup
             log(f"  Return panel: {return_panel.shape}")
             return factor_panels, return_panel
 
-    from modules.cross_sectional_ic import build_return_panel
+    from modules.cross_sectional_ic import build_return_panel, build_trading_calendar
     from modules.multi_factor import compute_factor_matrix
     from modules.finmind_client import (
         FinMindClient, build_flow_panel, build_fundamental_panel,
         get_roe, get_roa, get_eps, get_revenue_growth,
     )
+    from modules.factor_portfolio import align_factor_panel_to_execution
 
     fm = FinMindClient(token=TOKEN)
     factor_panels: dict = {}
@@ -286,14 +287,25 @@ def build_factor_panels(universe_data: dict, force_rebuild: bool = False) -> tup
         "trust_net_buy":   "trust",
         "dealer_net_buy":  "dealer",
     }
+    # 2026-09-07 Phase 1 A-G audit Finding C-1: build_flow_panel() date-stamps each row
+    # with the trading day the flow happened on (correct for the raw data itself), but
+    # that data isn't published until after that session's close (18:00+08:00, see
+    # get_factor_availability_rule). Pairing the raw panel against return_panel.loc[t] =
+    # close(t+lag)/close(t) implies trading at t's close on same-day flow data, a full
+    # session of look-ahead. align_factor_panel_to_execution() shifts each row to the
+    # first executable close after publication -- already written and unit-tested
+    # (tests/test_cross_sectional.py), just never wired into this script until now.
+    trading_calendar = build_trading_calendar(universe_data)
     for fname, key in FLOW_MAP.items():
         try:
             panel = build_flow_panel(universe_data, key, start_date, client=fm)
             if not panel.empty:
+                panel, _schedule = align_factor_panel_to_execution(panel, trading_calendar, factor_name=fname)
+            if not panel.empty:
                 factor_panels[fname] = panel
-                log(f"    {fname}: {panel.shape[1]} tickers × {len(panel)} dates")
+                log(f"    {fname}: {panel.shape[1]} tickers × {len(panel)} dates (execution-aligned)")
             else:
-                log(f"    {fname}: EMPTY (no data)")
+                log(f"    {fname}: EMPTY (no data, or empty after execution alignment)")
         except Exception as exc:
             log(f"    {fname}: ERROR {exc}")
 
@@ -340,6 +352,7 @@ def compute_all_ic(factor_panels: dict, return_panel: pd.DataFrame) -> dict:
     section("Step C: Cross-Sectional IC (NW HAC)")
 
     from modules.cross_sectional_ic import calc_cross_sectional_ic_series
+    from modules.factor_portfolio import FLOW_FACTOR_NAMES
     from modules.stats_utils import spearman_ic_stats, holm_adjust
     from scipy.stats import spearmanr
 
@@ -348,6 +361,11 @@ def compute_all_ic(factor_panels: dict, return_panel: pd.DataFrame) -> dict:
 
     for fname, fp in factor_panels.items():
         try:
+            # 2026-09-07 Phase 1 A-G audit Finding C-1: flow factor panels are already
+            # execution-aligned in build_factor_panels() (Step B) before reaching this
+            # function -- this flag just records that fact in the output CSV so readers
+            # can see which factors were shifted to their next executable close.
+            execution_aligned = fname in FLOW_FACTOR_NAMES
             ic_s = calc_cross_sectional_ic_series(fp, return_panel, min_stocks=5)
             ic_s = ic_s.dropna()
             if len(ic_s) < 10:
@@ -359,6 +377,7 @@ def compute_all_ic(factor_panels: dict, return_panel: pd.DataFrame) -> dict:
             q05, q25, q50, q75, q95 = np.nanpercentile(ic_s, [5, 25, 50, 75, 95])
             rows.append({
                 "factor":       fname,
+                "execution_aligned": execution_aligned,
                 "T":            stats["T"],
                 "L_nw":         stats["L"],
                 "mean_ic":      round(stats["mean_ic"] or 0, 6),
