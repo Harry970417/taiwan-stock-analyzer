@@ -1,40 +1,88 @@
-"""Regression tests for modules/universe_pit.py.
+# tests/test_universe_pit.py
+# Regression tests for the BLOCKER-severity PIT universe bug found in the
+# 2026-08 bias audit (docs/TW_US_BACKTEST_BIAS_AUDIT.md):
+# FinMind's TaiwanStockInfo 'date' field is a metadata-refresh timestamp,
+# NOT a listing date -- treating it as one silently produced an empty/wrong
+# point-in-time universe for historical as-of-dates.
+#
+# Run: python -m pytest tests/test_universe_pit.py -v
 
-Covers the 2026-08-31 bug: FinMind TaiwanStockInfo's `date` column is not a
-real listing date (it's a snapshot/last-updated timestamp), so filtering on
-it against a historical cutoff silently returned a near-empty universe
-instead of raising. build_pit_universe() must now fail loudly instead.
-"""
 import pandas as pd
 import pytest
 
-from modules.universe_pit import build_pit_universe
+from modules.universe_pit import (
+    _infer_listing_date_col,
+    infer_listing_dates_from_price_history,
+    build_pit_universe,
+)
 
 
-def _fake_stock_info(n_total=100, n_recent_date=95):
-    """Simulate the real FinMind response shape: `date` is mostly "today"-ish
-    (recent), not a true historical listing date, for most rows."""
-    rows = []
-    for i in range(n_total):
-        stock_id = f"{1000 + i}"
-        is_recent = i < n_recent_date
-        rows.append({
-            "stock_id": stock_id,
-            "type": "twse",
-            "date": "2026-08-31" if is_recent else "2010-01-01",
+class TestInferListingDateCol:
+    def test_generic_date_column_is_not_accepted(self):
+        # This is the exact shape FinMind's real TaiwanStockInfo returns:
+        # only a 'date' column, which is a refresh timestamp, not a listing
+        # date. Must NOT be picked up as the listing-date column.
+        df = pd.DataFrame({
+            "stock_id": ["2330", "1301"],
+            "type": ["twse", "twse"],
+            "date": ["2026-08-01", "2026-08-01"],  # today, for both -- not real listing dates
         })
-    return pd.DataFrame(rows)
+        assert _infer_listing_date_col(df) is None
+
+    def test_genuine_listed_date_column_is_accepted(self):
+        df = pd.DataFrame({
+            "stock_id": ["2330"],
+            "listed_date": ["1994-09-05"],
+        })
+        assert _infer_listing_date_col(df) == "listed_date"
+
+    def test_ipodate_column_is_accepted(self):
+        df = pd.DataFrame({"stock_id": ["2330"], "IPOdate": ["1994-09-05"]})
+        assert _infer_listing_date_col(df) == "IPOdate"
 
 
-def test_pit_filter_raises_instead_of_silently_returning_near_empty_universe():
-    df = _fake_stock_info(n_total=100, n_recent_date=95)
-    with pytest.raises(RuntimeError, match="not a real listing date"):
-        build_pit_universe(as_of_date="2015-01-01", stock_info_df=df)
+class TestInferListingDatesFromPriceHistory:
+    def test_hand_calc(self):
+        universe_data = {
+            "2330": pd.DataFrame({
+                "date": pd.to_datetime(["2020-03-02", "2020-03-03", "2020-03-04"]),
+                "close": [300.0, 301.0, 302.0],
+            }),
+            "6446": pd.DataFrame({
+                "date": pd.to_datetime(["2021-07-01", "2021-07-02"]),  # later IPO
+                "close": [500.0, 505.0],
+            }),
+        }
+        result = infer_listing_dates_from_price_history(universe_data)
+        assert result["2330"] == pd.Timestamp("2020-03-02")
+        assert result["6446"] == pd.Timestamp("2021-07-01")
+
+    def test_empty_df_skipped(self):
+        universe_data = {"EMPTY": pd.DataFrame(columns=["date", "close"])}
+        assert infer_listing_dates_from_price_history(universe_data) == {}
 
 
-def test_pit_filter_returns_normally_when_enough_rows_pass():
-    # Most rows have an old "date" here, so the cutoff genuinely keeps most
-    # of them -- this should NOT raise.
-    df = _fake_stock_info(n_total=100, n_recent_date=5)
-    ids = build_pit_universe(as_of_date="2015-01-01", stock_info_df=df)
-    assert len(ids) >= 90
+class TestBuildPitUniverseFallback:
+    def test_no_genuine_date_column_returns_unfiltered_candidates(self, capsys):
+        # Mirrors the real FinMind response shape (only 'date', no 'listed_date').
+        stock_info = pd.DataFrame({
+            "stock_id":  ["2330", "1301", "9999"],
+            "type":      ["twse", "twse", "twse"],
+            "date":      ["2026-08-01", "2026-08-01", "2020-01-01"],
+        })
+        result = build_pit_universe(
+            "2015-01-01", stock_info_df=stock_info,
+        )
+        # Should NOT filter by the bogus 'date' column -- all 3 twse stocks pass.
+        assert set(result) == {"2330", "1301", "9999"}
+        captured = capsys.readouterr()
+        assert "WARNING" in captured.out
+
+    def test_genuine_listed_date_column_still_filters_correctly(self):
+        stock_info = pd.DataFrame({
+            "stock_id":    ["2330", "6446"],
+            "type":        ["twse", "twse"],
+            "listed_date": ["1994-09-05", "2021-07-01"],
+        })
+        result = build_pit_universe("2015-01-01", stock_info_df=stock_info)
+        assert result == ["2330"]  # 6446 not yet listed as of 2015-01-01

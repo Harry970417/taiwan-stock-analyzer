@@ -1,0 +1,13 @@
+﻿allocation,cost_scenario,cost_bps_one_way,cagr_pct,mdd_pct,sharpe,calmar,total_cost_twd,cost_pct_of_gross_profit,avg_turnover_per_rebalance,final_assets_twd,still_positive_cagr,still_beats_tw_standalone,still_beats_us_standalone,still_below_0050_qqq_benchmark
+fixed_50_50,no_cost,0.0,14.85,-16.62,1.445,0.893,0.0,0.0,0.009,2431203.0,True,True,False,True
+fixed_50_50,standard,40.0,14.8,-16.63,1.44,0.89,4495.0,0.31,0.009,2424548.0,True,True,False,True
+fixed_50_50,doubled,80.0,14.75,-16.63,1.435,0.887,8981.0,0.63,0.009,2417903.0,True,True,False,True
+fixed_50_50,stress,120.0,14.7,-16.64,1.43,0.883,13459.0,0.94,0.009,2411267.0,True,True,False,True
+risk_parity,no_cost,0.0,12.4,-15.91,1.246,0.779,0.0,0.0,0.051,2117154.0,True,True,False,True
+risk_parity,standard,40.0,12.16,-16.02,1.221,0.759,20201.0,1.82,0.051,2088111.0,True,True,False,True
+risk_parity,doubled,80.0,11.92,-16.13,1.196,0.739,40061.0,3.64,0.051,2059506.0,True,True,False,True
+risk_parity,stress,120.0,11.68,-16.24,1.171,0.719,59595.0,5.46,0.051,2031328.0,True,True,False,True
+dynamic,no_cost,0.0,13.52,-17.19,1.317,0.787,0.0,0.0,0.059,2256598.0,True,True,False,True
+dynamic,standard,40.0,13.24,-17.23,1.289,0.768,24692.0,1.98,0.059,2220813.0,True,True,False,True
+dynamic,doubled,80.0,12.96,-17.27,1.261,0.75,49011.0,3.97,0.059,2185502.0,True,True,False,True
+dynamic,stress,120.0,12.67,-17.31,1.232,0.732,72963.0,5.96,0.059,2150653.0,True,True,False,True

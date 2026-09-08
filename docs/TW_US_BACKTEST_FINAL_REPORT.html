@@ -1,0 +1,224 @@
+<!doctype html>
+<html lang="zh-Hant"><head><meta charset="utf-8">
+<title>台美股策略回測 -- 最終研究報告</title>
+<style>
+body { font-family: -apple-system, "Noto Sans TC", Segoe UI, Arial, sans-serif; max-width: 960px; margin: 2rem auto; padding: 0 1rem; line-height: 1.7; color: #1a1a1a; }
+table { border-collapse: collapse; width: 100%; margin: 1rem 0; font-size: 0.9rem; }
+th, td { border: 1px solid #ccc; padding: 6px 10px; text-align: left; }
+th { background: #f0f0f0; }
+code { background: #f5f5f5; padding: 1px 4px; border-radius: 3px; }
+h1, h2, h3 { border-bottom: 1px solid #ddd; padding-bottom: 0.3rem; }
+hr { border: none; border-top: 1px solid #ddd; margin: 2rem 0; }
+blockquote { border-left: 3px solid #1E40AF; margin: 1rem 0; padding: 0.5rem 1rem; background: #F8FAFC; color: #334155; }
+</style></head><body>
+<h1>台美股策略回測 — 最終研究報告</h1>
+<p><strong>狀態</strong>：Phase 1–4 全部完成。本報告為 Phase 4 正式展示用整合報告，數字皆採用 Phase 3.5 收尾稽核所標準化之成本情境（單邊 40bps）與 30 組股票池抽樣結果。更完整的逐項稽核過程與早期（Phase 3 初版、未標準化成本情境）數字，請見 <code>docs/PHASE3_TW_US_COMBINED_REPORT.md</code> 與 <code>docs/TW_US_BACKTEST_BIAS_AUDIT.md</code>。</p>
+<p>本報告及所有數字僅供學術研究與作品集展示，不構成投資建議。</p>
+<hr />
+<h2>一、研究目的與範圍</h2>
+<p>檢驗一組台股＋美股雙市場量化組合策略（固定 50/50、風險平價、動態配置），在 Walk-Forward 樣本外測試、多股票池抽樣穩健性驗證、以及多項成本／期間敏感性測試下，相對被動基準（0050、SPY、QQQ 及其組合）之表現。</p>
+<p>回測樣本外區間：<strong>2019-09-03 至 2026-02-02</strong>。方法論細節見 <code>TW_US_BACKTEST_METHODS.md</code>。</p>
+<hr />
+<h2>二、核心結果（30 組股票池抽樣，中位數，標準成本情境）</h2>
+<table>
+<thead>
+<tr>
+<th>策略</th>
+<th>類別</th>
+<th>CAGR</th>
+<th>MDD</th>
+<th>Sharpe</th>
+<th>Calmar</th>
+<th>研究判定</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>0050＋QQQ 固定 50/50</td>
+<td>被動基準</td>
+<td>18.04%</td>
+<td>-22.55%</td>
+<td>—</td>
+<td>—</td>
+<td>比較基準</td>
+</tr>
+<tr>
+<td>0050＋SPY 固定 50/50</td>
+<td>被動基準</td>
+<td>16.43%</td>
+<td>-19.22%</td>
+<td>—</td>
+<td>—</td>
+<td>比較基準</td>
+</tr>
+<tr>
+<td><strong>主動固定 50/50</strong></td>
+<td>主動配置</td>
+<td><strong>12.67%</strong>（中位數）</td>
+<td><strong>-17.08%</strong>（中位數）</td>
+<td>1.11（中位數）</td>
+<td>0.756（中位數）</td>
+<td><strong>保留（低回撤研究組合）</strong></td>
+</tr>
+<tr>
+<td>0050＋QQQ 風險平價</td>
+<td>被動基準</td>
+<td>14.26%</td>
+<td>-24.98%</td>
+<td>—</td>
+<td>—</td>
+<td>比較基準</td>
+</tr>
+<tr>
+<td>主動動態配置</td>
+<td>主動配置</td>
+<td>11.74%（中位數）</td>
+<td>-17.78%（中位數）</td>
+<td>1.00（中位數）</td>
+<td>0.677（中位數）</td>
+<td>淘汰</td>
+</tr>
+<tr>
+<td>主動風險平價</td>
+<td>主動配置</td>
+<td>11.48%（中位數）</td>
+<td>-16.27%（中位數）</td>
+<td>1.04（中位數）</td>
+<td>0.716（中位數）</td>
+<td>淘汰</td>
+</tr>
+</tbody>
+</table>
+<p>30 組股票池抽樣中，主動固定 50/50 於 <strong>0% 的組別</strong>贏過 0050＋QQQ 固定 50/50 被動基準的 CAGR；同時於 <strong>100% 的組別</strong>維持正報酬（最差組 6.82%，最佳組 15.53%）。</p>
+<hr />
+<h2>三、正式結論（逐字採用 Phase 3.5 鎖定文字）</h2>
+<blockquote>
+<p>「在本研究樣本、30 組股票池抽樣、Walk-Forward 樣本外測試及既定交易成本假設下，Combined-v1-Fixed-5050 已驗證具有相對回撤控制效果；但相對最強被動基準的 CAGR 超額報酬未獲驗證。」</p>
+<p>本結論不代表已在真實資金、未來市場，或完整歷史成分股名單下獲得驗證。</p>
+</blockquote>
+<p>三項主動配置之最終判定：</p>
+<table>
+<thead>
+<tr>
+<th>配置</th>
+<th>判定</th>
+<th>理由</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Combined-v1-Fixed-5050</td>
+<td><strong>保留（研究用途，非投資建議）</strong></td>
+<td>通過全部四項 Phase 3.5 收尾穩健性測試（成本壓力、分期間、移除最佳年度、回撤量化），30 組中 CAGR 與 Calmar 中位數皆為三項主動配置中最高。仍未驗證 CAGR 優於最強被動基準。</td>
+</tr>
+<tr>
+<td>Combined-v1-Risk-Parity</td>
+<td><strong>淘汰</strong></td>
+<td>30 組中 CAGR 中位數為三項配置中最低，且未在 MDD 上取得足以抵銷之優勢。</td>
+</tr>
+<tr>
+<td>Combined-v1-Dynamic</td>
+<td><strong>淘汰</strong></td>
+<td>30 組中 MDD 中位數為三項配置中最差（回撤最深），且未取得對應的 CAGR 補償。</td>
+</tr>
+</tbody>
+</table>
+<p>依指示，遭淘汰之配置不會在展示頁面中被包裝為「可選方案」，僅標示為「已測試並淘汰」。</p>
+<hr />
+<h2>四、四項穩健性測試摘要</h2>
+<h3>4.1 成本壓力測試</h3>
+<p>固定 50/50 於免成本（14.85%）、標準 40bps（14.80%）、雙倍 80bps（14.75%）、壓力 120bps（14.70%）四種情境下 CAGR 幾乎無變化，成本僅佔毛利 0.94%（壓力情境）。<strong>「CAGR 未優於最強被動基準」之結論並非交易成本假設造成，而是策略本身在樣本外期間的特性。</strong></p>
+<h3>4.2 分期間拆解（直接以組合淨值計算）</h3>
+<table>
+<thead>
+<tr>
+<th>期間</th>
+<th>CAGR</th>
+<th>MDD</th>
+<th>相對基準超額</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>2019-09→2021-12</td>
+<td>20.51%</td>
+<td>-9.44%</td>
+<td>-4.22pp</td>
+</tr>
+<tr>
+<td>2022-01→樣本外結束</td>
+<td>11.68%</td>
+<td>-16.63%</td>
+<td>-2.50pp</td>
+</tr>
+<tr>
+<td>全樣本外期間</td>
+<td>14.80%</td>
+<td>-16.63%</td>
+<td>-3.24pp</td>
+</tr>
+</tbody>
+</table>
+<p>相對基準之落後在兩個子期間及全樣本外期間皆為負值，顯示 CAGR 落後並非單一年度或單一市場區間造成；2022 年後（實際空頭期間）策略仍維持正報酬與相對可控的回撤。</p>
+<h3>4.3 移除最佳年度測試（公平共同年度版本）</h3>
+<p>四個比較對象之共同最佳年度皆為 2023 年。移除 2023 年後：固定 50/50 CAGR 由 14.80% 降至 10.53%，被動基準由 18.04% 降至 11.81%——雙方同樣高度依賴該年度表現，且移除後相對排名未改變，故「CAGR 落後」之結論不是單一年度造成的假象。</p>
+<h3>4.4 回撤精確量化</h3>
+<p>相對 0050＋QQQ 固定 50/50，主動固定 50/50 每降低 1 個百分點的 MDD，需犧牲約 0.547 個百分點的年化報酬；相對 0050＋SPY 固定 50/50 則約 0.632 個百分點。值得注意的例外：<strong>相對 0050＋QQQ 風險平價這一項被動基準，主動固定 50/50 在 CAGR（14.80% vs 14.26%）與 MDD（-16.63% vs -24.98%）兩個維度上同時勝出</strong>——「未優於被動基準」之結論限定於最強的被動比較組（0050＋QQQ 固定 50/50），並非對所有被動配置皆成立。</p>
+<hr />
+<h2>五、歸因分析</h2>
+<ul>
+<li><strong>匯率貢獻</strong>：全樣本外期間約 +0.07 個百分點，對整體報酬影響甚小；子期間拆解顯示匯率效果方向在 2019-2021（約 -3.23pp）與 2022 年後（約 +1.76pp）相反，兩者互相抵銷，非單一方向的系統性驅動力。</li>
+<li><strong>台股腿 vs 美股腿貢獻</strong>：全樣本外期間兩腿 CAGR 相近（台股腿約 14.8%、美股腿約 14.57%），並非由單一市場主導組合報酬；惟此為美股「近似點時」股票池所支撐之結果，其本身之 CAGR 優勢在多股票池抽樣中並未達到统計上穩健的程度（見 <code>PHASE3_TW_US_COMBINED_REPORT.md</code> §3.5 之選股/配置/時機拆解）。</li>
+</ul>
+<hr />
+<h2>六、與其他研究專案的關係</h2>
+<p>本研究為「學術研究」定位下的量化研究產出之一，方法論與台股量化研究平台（Taiwan Stock Analyzer）既有頁面共用同一套績效指標與交易紀錄重建模組，並延伸至美股與跨市場組合層級。本研究所有結論皆為研究過程紀錄，與平台其他頁面（動能分析、因子選股等）互為獨立模組，不互相背書彼此的投資有效性。</p>
+<hr />
+<h2>七、相關文件索引</h2>
+<table>
+<thead>
+<tr>
+<th>文件</th>
+<th>內容</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>TW_US_BACKTEST_EXECUTIVE_SUMMARY.md</code></td>
+<td>一頁式執行摘要</td>
+</tr>
+<tr>
+<td><code>TW_US_BACKTEST_METHODS.md</code></td>
+<td>方法論細節</td>
+</tr>
+<tr>
+<td><code>TW_US_BACKTEST_LIMITATIONS.md</code></td>
+<td>研究限制（8 項）</td>
+</tr>
+<tr>
+<td><code>TW_US_BACKTEST_METRIC_DEFINITIONS.md</code></td>
+<td>指標定義</td>
+</tr>
+<tr>
+<td><code>TW_US_BACKTEST_REPRODUCIBILITY.md</code></td>
+<td>重現步驟</td>
+</tr>
+<tr>
+<td><code>PHASE3_TW_US_COMBINED_REPORT.md</code></td>
+<td>Phase 3／3.5 逐項稽核完整記錄（12 項問題解答、7 項基準比較、選股/配置/時機拆解）</td>
+</tr>
+<tr>
+<td><code>TW_US_BACKTEST_BIAS_AUDIT.md</code></td>
+<td>Phase 1–2.5 偏誤稽核總紀錄</td>
+</tr>
+<tr>
+<td><code>PHASE4_UI_TEST_REPORT.md</code></td>
+<td>Phase 4 展示頁面瀏覽器驗證報告</td>
+</tr>
+<tr>
+<td><code>pages/15_台美股策略回測.py</code></td>
+<td>正式展示頁面</td>
+</tr>
+</tbody>
+</table>
+</body></html>

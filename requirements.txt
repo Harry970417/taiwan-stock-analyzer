@@ -1,12 +1,27 @@
-# requirements.txt - Taiwan Stock Factor Analyzer mainline runtime
-# Python: 3.11
+# requirements.txt — Taiwan Stock Factor Analyzer (Phase 1)
+# Updated: 2026-08-03 | Platform: Windows 11 | Python 3.11 (pinned production runtime)
 #
-# Install:
-#   python -m pip install -r requirements.txt
+# SUPPORTED runtime: Python 3.11.x (matches .python-version, runtime.txt,
+# Dockerfile). Verified 2026-08-03 in a brand-new virtual environment:
+# `pip install -r requirements.txt` installs cleanly (pandas 2.3.3, numpy
+# 1.26.4), `pytest tests/` passes all 252 tests, `streamlit run app.py`
+# serves correctly. Python 3.12 also verified clean as a fallback.
+#
+# UNSUPPORTED: Python 3.14. numpy<2.0 has no prebuilt wheel for 3.14 and
+# will attempt a from-source build requiring a C/C++ toolchain (meson +
+# a compiler) that is not present on this machine, causing `pip install`
+# to fail outright. The environment that produced results/metadata.json
+# (Python 3.14.5, pandas 3.0.3, numpy 2.4.6) was a local interactive-dev
+# environment with those packages already present system-wide, NOT a
+# `pip install -r requirements.txt` from this file on that Python version.
+# Do not deploy on Python 3.14. See docs/DEPLOYMENT_READINESS_PHASE4.md
+# and reproducibility_manifest.md item #3 for the full history.
 #
 # The remediation replay produced on Python 3.14.5 is pinned separately in
-# requirements.lock.txt. This main runtime stays aligned with Dockerfile and
-# pyproject.toml on pandas<3 / numpy<2.
+# requirements.lock.txt.
+#
+# Install: pip install -r requirements.txt
+# Reproduce exactly: pip install --no-deps -r requirements.txt
 
 pandas>=2.0.0,<3.0
 numpy>=1.24.0,<2.0

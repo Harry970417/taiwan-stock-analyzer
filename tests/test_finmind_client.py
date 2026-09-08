@@ -9,7 +9,9 @@ import pandas as pd
 import pytest
 import requests
 
-from modules.finmind_client import FinMindClient, get_roe, get_dealer_data
+from modules.finmind_client import (
+    FinMindClient, get_roe, get_dealer_data, _apply_disclosure_lag,
+)
 
 
 @pytest.fixture(autouse=True)
@@ -236,3 +238,49 @@ def test_request_cache_key_differs_by_stock_id(monkeypatch):
         client._request("TaiwanStockPER", "2330", "2024-01-01")
         client._request("TaiwanStockPER", "2454", "2024-01-01")
         assert mock_get.call_count == 2, "不同stock_id必須各自打API，不能共用快取"
+
+
+def test_disclosure_lag_q1q3_is_45_days():
+    idx = pd.DatetimeIndex(["2024-03-31", "2024-06-30", "2024-09-30"])
+    lagged = _apply_disclosure_lag(idx)
+    assert list(lagged) == list(idx + pd.Timedelta(days=45))
+
+
+def test_disclosure_lag_q4_annual_is_90_days():
+    """
+    Regression test for the audit finding: Q4/annual reports get the FSC's
+    90-day audited-report deadline, not the 45-day quarterly deadline.
+    Empirically confirmed via web search (2026-08): FSC requires Q1-Q3
+    filing within 45 days, Q4/annual (audited) within 3 months (90 days).
+    """
+    idx = pd.DatetimeIndex(["2023-12-31", "2024-12-31"])
+    lagged = _apply_disclosure_lag(idx)
+    assert list(lagged) == list(idx + pd.Timedelta(days=90))
+
+
+def test_roe_q4_report_uses_90_day_lag(monkeypatch):
+    """ROE from a Dec-31 (Q4/annual) report must be lagged 90 days, not 45."""
+    monkeypatch.setenv("FINMIND_TOKEN", "fake_token")
+
+    report_date = "2023-12-31"
+    fake = MagicMock()
+    fake.raise_for_status = MagicMock()
+    fake.json.return_value = {
+        "status": 200,
+        "data": [
+            {"date": report_date, "stock_id": "2330",
+             "type": "IncomeAfterTaxes", "value": "50000"},
+            {"date": report_date, "stock_id": "2330",
+             "type": "EquityAttributableToOwnersOfParent", "value": "200000"},
+        ],
+    }
+
+    with patch("modules.finmind_client.requests.get", return_value=fake):
+        client = FinMindClient(token="fake_token")
+        roe = get_roe("2330", "2023-01-01", client)
+
+    assert not roe.empty
+    expected_date_90d = pd.Timestamp(report_date) + pd.Timedelta(days=90)
+    wrong_date_45d = pd.Timestamp(report_date) + pd.Timedelta(days=45)
+    assert expected_date_90d in roe.index, "Q4 報告應延遲 90 天，而非 45 天"
+    assert wrong_date_45d not in roe.index, "Q4 報告不應僅延遲 45 天（look-ahead risk）"

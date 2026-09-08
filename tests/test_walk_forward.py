@@ -118,6 +118,41 @@ class TestIcWeightedCombination:
         if not result.empty:
             assert len(result) <= 30
 
+    def test_missing_factor_is_excluded_not_zeroed(self):
+        """
+        Regression test for the delisting-sensitivity audit finding
+        (docs/TW_US_BACKTEST_BIAS_AUDIT.md): a stock missing one of two
+        equally-weighted factors must get its composite from the
+        AVAILABLE factor alone, not (available*0.5 + 0*0.5) as the old
+        `.add(fill_value=0)` implementation produced.
+        """
+        dates = pd.date_range("2021-01-01", periods=5, freq="B")
+        # f0: T00=10 every day. f1: T00=NaN every day (simulates a
+        # factor that's undefined for this stock, e.g. RSI on a
+        # zero-variance price series).
+        f0 = pd.DataFrame({"T00": [10.0] * 5}, index=dates)
+        f1 = pd.DataFrame({"T00": [np.nan] * 5}, index=dates)
+        panels = {"f0": f0, "f1": f1}
+        ic_dict = {
+            "f0": pd.Series([0.03] * 5, index=dates),
+            "f1": pd.Series([0.03] * 5, index=dates),  # equal weight to f0
+        }
+        result = ic_weighted_combination(panels, ic_dict, (dates[0], dates[-1]))
+        # OLD (buggy) behavior: 10*0.5 + 0*0.5 = 5.0 (missing factor silently zeroed)
+        # NEW (correct) behavior: weighted avg of available factors only = 10.0
+        assert result["T00"].iloc[0] == pytest.approx(10.0)
+
+    def test_stock_with_zero_available_factors_is_nan_not_zero(self):
+        """A stock with ALL factors missing must be NaN (ineligible), never a
+        fabricated neutral 0 that could out-rank real stocks with negative scores."""
+        dates = pd.date_range("2021-01-01", periods=3, freq="B")
+        f0 = pd.DataFrame({"GOOD": [5.0] * 3, "GHOST": [np.nan] * 3}, index=dates)
+        panels = {"f0": f0}
+        ic_dict = {"f0": pd.Series([0.03] * 3, index=dates)}
+        result = ic_weighted_combination(panels, ic_dict, (dates[0], dates[-1]))
+        assert result["GOOD"].iloc[0] == pytest.approx(5.0)
+        assert np.isnan(result["GHOST"].iloc[0])
+
 
 # ─────────────────────────────────────────────────────────────────────────────
 # bootstrap_sharpe_diff

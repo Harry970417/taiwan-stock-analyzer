@@ -1,0 +1,4 @@
+﻿period,start,end,cagr_pct,mdd_pct,sharpe,calmar,pct_positive_months,worst_month_pct,best_month_pct,tw_leg_cagr_pct,us_leg_cagr_pct,fx_contribution_pp,benchmark_0050_qqq_cagr_pct,excess_vs_benchmark_pp
+2019-09_to_2021-12,2019-09-03,2021-12-31,20.51,-9.44,1.889,2.173,70.4,-5.71,16.62,20.69,20.32,-3.23,24.72,-4.22
+2022-01_to_OOS_end,2022-01-03,2026-02-02,11.68,-16.63,1.164,0.702,59.2,-7.72,8.59,11.68,11.42,1.76,14.18,-2.5
+full_OOS,2019-09-03,2026-02-02,14.8,-16.63,1.44,0.89,62.3,-7.72,16.62,14.8,14.57,0.07,18.04,-3.24
