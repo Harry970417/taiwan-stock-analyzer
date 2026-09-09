@@ -201,6 +201,86 @@
 
 ---
 
+## 10. 最終 Reconciliation（2026-09-09 追補，回應「不得僅因文件已更新就視為 CLOSED」）
+
+### 10.1 Gross-to-Net Accounting Bridge（逐項驗證）
+
+驗證：年化 one-way turnover × 假設成本率，是否與實際年化 TC drag 數量級一致：
+
+| 頻率 | 年化turnover | 合併成本率（買+賣） | 預期TC drag | 實際TC drag | 是否一致 |
+|---|---|---|---|---|---|
+| Daily | 405.5% | 0.785% | 3.183% | **3.183%** | 完全相符（定義恆等式） |
+| Monthly | 247.6% | 0.785% | 1.944% | **1.944%** | 完全相符 |
+| Info-update | 224.2% | 0.785% | 1.760% | **1.760%** | 完全相符 |
+
+`TC_t = one_way_turnover_t × (buy_rate+sell_rate)`本身是定義恆等式，年化後兩者逐位元相符，符合預期，已建立自動化 invariant test（`scripts/test_p1_18_simulation_sanity.py::test_tc_drag_equals_turnover_times_cost_rate_invariant`）。
+
+**但 Gross alpha 與 Net alpha 之差，不完全等於上述 raw TC drag**（此為預期中的正常現象，非錯誤）：
+
+| 頻率 | Raw TC drag | 實際 alpha 下降（Gross−Net） | 差距 | 差距來源 |
+|---|---|---|---|---|
+| Daily | 3.183% | 3.715% | +0.53pp | CAPM重估時beta微幅改變，導致部分TC drag被歸因到beta項而非alpha項 |
+| Monthly | 1.944% | 1.589% | −0.36pp | 同上，方向相反（beta改變吸收的方向不同） |
+| Info-update | 1.760% | 2.325% | +0.57pp | 同上 |
+
+**結論**：兩者不完全相等的原因已查明並非程式錯誤——alpha是OLS迴歸截距，非簡單算術平均，net return序列的TC drag若與市場報酬存在任何非零相關（即使很小），迴歸會把部份drag重新分配到beta係數上，而非全部留在alpha截距。這是CAPM單指數模型的已知數學特性，不是bug。若要求「TC drag必須100%等於alpha下降」，等同於要求beta在Gross/Net之間完全不變，這在存在TC drag的情況下並非統計上必然成立的假設。
+
+### 10.2 樣本可比性最終確認（禁止跨樣本直接相減）
+
+**明確結論：以下數字並非來自完全相同的dates/stocks/returns/factor values/portfolio membership**：
+
+- `102.8409%`（Historical Locked Gross Estimate）：日期範圍未知確切邊界（推定約2024-06-12～2026-06-12），使用鎖定時的`build_universe()`程式碼（無min_days暖身期剔除）。
+- `86.66%/90.52%/80.06%/86.83%`（Post-Lock Reconstructed Net Estimate，Base Cost情境）：日期範圍2024-11-12～2026-06-12（今日程式碼含2026-08-29新增的min_days=100暖身期剔除），T=192（非T=198）。
+
+**兩組數字的benchmark（TWII）、risk-free rate（年化1.5%）、CAPM迴歸規格、HAC設定完全相同**（見第6節），但**underlying股票報酬序列與factor panel的實際樣本區間不同**。
+
+**因此，本文件與所有衍生文件（作品集、教授Q&A）中，一律不得出現「102.84% 扣成本後剩XX%」這種直接算術關聯的語句**——逐一檢查本文件與已更新的作品集/Q&A原文，確認所有引用皆已採用「Historical Locked Gross Estimate（102.84%，不同樣本，僅供對照）」與「Post-Lock Reconstructed Net Estimate（86.66%等，Base Cost情境）」兩組獨立標籤呈現，未發現違反此原則之語句。
+
+### 10.3 Break-Even Cost 單位重新確認
+
+**單位明確聲明**：本文件第7節之「round-trip bps」定義為**每單位turnover名目金額**的雙邊（買+賣）總成本，即`bps/10000`為`buy_rate+sell_rate`之和，套用對象是`one_way_turnover_t`（已用投組NAV正規化的權重變動量，見第4節定義）。由於`one_way_turnover_t`本身已是「佔投組NAV之比例」，"bps per traded notional"與"bps per portfolio NAV per turnover unit"在本文件的計算中數學上等價，不存在單位混用問題。
+
+**求解方法重新確認**：第7節之break-even數字**並非**用年化alpha除以年化turnover的近似公式反推，而是對每一個測試的bps水準，**重新執行完整的每日報酬路徑模擬**（`simulate_quantile_book`完整重跑），再對得出的實際net_return日頻序列重新執行NW-HAC CAPM迴歸取得該bps水準下的真實net alpha——即直接從period return path求解，符合本次追補要求。
+
+**精確化結果**（改用二分法直接在模擬路徑上求解，取代原本的線性內插估計）：
+
+| 頻率 | Break-even round-trip bps（二分法精確解） | 該點殘餘alpha |
+|---|---|---|
+| Daily | **1906.2 bps** | 0.16%（≈0） |
+| Monthly | **4031.2 bps** | 0.03%（≈0） |
+| Info-update | **3015.6 bps** | -0.15%（≈0） |
+
+與原本線性內插估計（1900/4000/3000bps）幾乎完全一致，確認原估計已足夠精確，此處提供二分法解作為方法論上更嚴謹的版本。
+
+### 10.4 P0-21：Difference-in-Significance / H3 Hypothesis Logic Audit（新增）
+
+**檢查目標**：H3是否存在「Q5顯著、Q1不顯著，故Q5與Q1有顯著差異」此類錯誤推論。
+
+**直接讀取thesis鎖定文字**（`thesis/chapter3_研究方法.md`§3.x、`chapter5_實證結果.md`§5.5.1、`chapter6_結論與建議.md`）確認：
+
+1. **H3的正式假說設定，本來就不是「Q5與Q1的價差顯著」，而是兩個獨立的單尾檢定**：Q5組 H0:α_Q5≤0 vs H1:α_Q5>0；Q1組 H0:α_Q1≥0 vs H1:α_Q1<0。理論基礎為Miller(1977)悲觀預期障礙假說——這個理論本身預測的是「兩端各自的方向性行為」，不是要求一個聯合的價差顯著性檢定。**因此，H3的正式定義本身不構成「difference in significance ⟹ significant difference」的謬誤**——因為它從未宣稱要用價差顯著性來支持結論。
+2. **thesis正文已多次、明確地自我防禦此謬誤**（`chapter6_結論與建議.md`第29行、第103行）：「本研究須強調...『無法拒絕H0』在統計意義上不等同於『接受H0』或『確認超額報酬存在』...不得解讀為『放空障礙存在獲得實證確認』或『H3成立』」；「統計上無法拒絕H0並不等同於確認H1...此一邏輯...所能支持的結論強度有限」。**未發現thesis正文存在使用者擔心的錯誤推論。**
+3. **鎖定資料本身已包含L/S（Q5-Q1）價差列**（`table_5_11`／`chapter5_實證結果.md`表5-11）：α=56.50%，t=1.2490，雙尾p值經本次計算為**0.2135（不顯著）**。**此為既有鎖定資料，非新計算，故不需要新的重跑即可驗證。** 但thesis表格中此列的「H3解讀」欄位留空（未像Q1/Q5一樣填入解讀文字）——這是一個真實的、可歸屬於thesis本身的小缺口：呈現了數字卻未明確narrate其不顯著，雖不構成錯誤推論，但屬於「呈現不完整」。
+4. **本次稽核（本文件第2/5節）之獨立重建結果與此完全一致**：LS spread在所有頻率、所有成本情境下皆不顯著（\|t\|<0.4），方向與鎖定資料的t=1.249（同樣不顯著）一致，僅量級不同（可能源於樣本窗口差異，見10.2節樣本不可比警告）。
+
+**輸出**：
+- estimate（鎖定資料）：α_LS=56.50%（年化），t=1.2490，NW-HAC（L=4，同Q1/Q5規格）
+- p-value（雙尾，本次新算）：0.2135
+- economic magnitude：56.50%年化雖數值不小，但統計上不可信賴為非零
+- monotonic pattern：**不存在**——thesis表5-11已自行揭露 Q2(104.00%)>Q5(102.84%)>Q1(44.84%)>Q4(23.67%)>Q3(14.48%)，非單調
+
+**兩類證據明確區分**（依使用者要求，不得混用）：
+1. **Q5 long-only abnormal return evidence**：SUPPORTED（NW-HAC t=2.2335顯著，且P1-18已確認對交易成本極度不敏感）。
+2. **Cross-sectional factor spread evidence（Q5-Q1）**：NOT SUPPORTED（鎖定資料與獨立重建皆顯示不顯著）。**這兩類證據不應被混用或互相替代作為對方的佐證。**
+
+**H3 最終判定：PARTIALLY SUPPORTED**
+
+理由：H3正式定義的兩個獨立單尾檢定，一個被拒絕支持（Q5，H1:α>0成立），一個無法拒絕虛無假說（Q1，僅達成「方向一致」而非「證實」）——這正是thesis自己誠實描述的狀態，不誇大也不需要降級。但若有任何場合（作品集、口試simplify表達、GRP-001後續研究）把H3或這組結果簡化描述為「已驗證的EPS成長因子」或暗示Q5-Q1價差顯著，則該簡化描述本身是錯誤的，必須依本節澄清修正——**經檢查，目前的作品集文件與教授Q&A未發現此類簡化錯誤**（見10.2節確認）。
+
+**STATUS：CLOSED**——無需重跑新分析（L/S數字直接取自鎖定資料本身，其NW-HAC方法論與Q1/Q5已使用的方法完全相同、已經過驗證），僅需文件層級的明確區分與p值補算，已完成並記錄於本節。
+
+---
+
 ## 附錄：資料與程式碼出處
 
 - 重建腳本：`scripts/run_p1_18_tc_robustness.py`（Part 1：日期窗口重建+驗證）、`scripts/run_p1_18_part2_simulation.py`（Part 2：turnover/TC/CAPM/break-even/頻率敏感度模擬）
