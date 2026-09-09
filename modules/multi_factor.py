@@ -253,15 +253,25 @@ def calc_factor_ic(
 
     icir = ic_mean_roll / ic_std if ic_std > 1e-8 else 0.0
 
-    # ── t-statistic: t = ICIR * sqrt(n) ──────────────────────────────────
+    # ── t-statistic: Newey-West HAC on the rolling IC series ────────────────
+    # 2026-09-09: migrated off the deprecated `icir * sqrt(n)` formula (see
+    # modules/stats_utils.py's own policy comment marking it deprecated) onto
+    # quant_formulas.factor_stats (Desktop/quant-system-core) -- the 60-day
+    # rolling windows overlap heavily between consecutive observations,
+    # inducing serial correlation that icir*sqrt(n) does not account for and
+    # that materially overstates significance (see Phase 1 A-G audit Finding
+    # C-5).
     n_roll = len(rolling_ic_series)
-    t_stat = icir * np.sqrt(max(n_roll, n)) if icir != 0.0 else 0.0
+    if n_roll >= 5:
+        from quant_formulas.factor_stats import newey_west_se, t_stat_and_pvalue
 
-    # p-value from t-distribution with (n-2) degrees of freedom
-    if abs(t_stat) > 0 and n > 2:
-        p_value = float(2.0 * scipy_stats.t.sf(abs(t_stat), df=n - 2))
+        se = newey_west_se(rolling_ic_series)
+        if se > 0:
+            t_stat, p_value = t_stat_and_pvalue(ic_mean_roll, se, df=n_roll - 1)
+        else:
+            t_stat, p_value = 0.0, 1.0
     else:
-        p_value = 1.0
+        t_stat, p_value = 0.0, 1.0
 
     significant = abs(t_stat) > 2.0
 
