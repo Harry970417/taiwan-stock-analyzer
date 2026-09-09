@@ -14,6 +14,11 @@ import numpy as np
 import pandas as pd
 from typing import Optional
 
+from quant_formulas.returns import cagr as _qf_cagr
+from quant_formulas.risk_metrics import annualized_volatility as _qf_annualized_volatility
+from quant_formulas.risk_metrics import max_drawdown as _qf_max_drawdown
+from quant_formulas.risk_metrics import sharpe_ratio as _qf_sharpe_ratio
+
 from modules.cross_sectional_ic import (
     build_factor_panel,
     build_trading_calendar,
@@ -487,17 +492,23 @@ def calc_portfolio_metrics(returns: pd.Series, rf_daily: float = 1.5 / 252 / 100
             "win_rate": None, "n_obs": n,
         }
 
-    mean_daily = float(ret.mean())
-    std_daily = float(ret.std()) if n > 1 else 0.0
-    annual_ret = (1 + mean_daily) ** ANNUAL_FACTOR - 1
-    annual_vol = std_daily * np.sqrt(ANNUAL_FACTOR)
-    sharpe = (annual_ret - rf_daily * ANNUAL_FACTOR) / annual_vol if annual_vol > 1e-9 else 0.0
+    # Migrated to quant_formulas (Desktop/quant-system-core): annual_return is
+    # now the true equity-curve CAGR, not the (1+mean_daily)^248-1
+    # arithmetic-mean-compounded approximation -- see
+    # modules/performance_metrics.py's docstring and
+    # docs/TW_US_BACKTEST_BIAS_AUDIT.md for why the two are not
+    # interchangeable. rf_daily * 252 recovers the annual risk-free rate the
+    # caller intended (the default's own derivation), passed to
+    # sharpe_ratio's risk_free_rate parameter.
+    annual_ret = _qf_cagr(ret, periods_per_year=ANNUAL_FACTOR)
+    annual_vol = _qf_annualized_volatility(ret, periods_per_year=ANNUAL_FACTOR)
+    sharpe = _qf_sharpe_ratio(ret, periods_per_year=ANNUAL_FACTOR, risk_free_rate=rf_daily * 252)
+    if sharpe is None:
+        sharpe = 0.0
 
     # 最大回撤
-    cum_val = (1 + ret).cumprod()
-    rolling_max = cum_val.cummax()
-    drawdown = (cum_val / rolling_max) - 1.0
-    max_dd = float(drawdown.min())
+    nav = (1 + ret).cumprod()
+    max_dd = _qf_max_drawdown(nav)
 
     win_rate = float((ret > 0).mean())
 
