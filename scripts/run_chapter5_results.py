@@ -686,7 +686,21 @@ def run_h3(portfolio_returns: dict, out_dir: Path,
         if qname not in qport.columns:
             continue
         port_ret = qport.loc[common_idx, qname].values
-        excess_p = port_ret - rf_daily
+        # BUG FIXED 2026-09-20 (found via an external audit of the A04 finding: L/S
+        # alpha was reported as 56.50% but Q5_alpha-Q1_alpha=58.0028% -- the gap was
+        # exactly 1.5pp = rf_annual, and LS's own beta (-0.0646) already exactly
+        # matched beta_Q5-beta_Q1 (-0.0645), proving the OLS design matrix/sample was
+        # identical and only alpha was biased). "LS" (factor_portfolio.py's
+        # build_quantile_portfolio: "LS = Long-Short = Q5 - Q1", a raw zero-net-
+        # investment spread) was being treated the same as Q1/Q5 (real invested
+        # single-quintile portfolios that DO need excess-of-rf treatment) --
+        # subtracting rf_daily from an already-zero-investment spread return double-
+        # counts rf and biases the estimated alpha downward by exactly rf_annual
+        # (shifting a regression's y by a constant shifts its intercept by that same
+        # constant without changing beta or the residual SE, which is exactly the
+        # -1.5pp / unchanged-beta pattern observed). LS does not get the rf
+        # subtraction that Q1..Q5 correctly get.
+        excess_p = port_ret if qname == "LS" else port_ret - rf_daily
         excess_m = mkt_ret - rf_daily
         T = len(excess_p)
         X = np.column_stack([np.ones(T), excess_m])
