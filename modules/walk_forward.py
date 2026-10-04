@@ -199,7 +199,7 @@ def _evaluate_fold(
         qport_b = build_quantile_portfolios(composite_oos, r_oos,
                                             n_quantiles=n_quantiles, min_stocks=min_stocks)
         ls_b = qport_b.get("LS", pd.Series(dtype=float))
-        _v = calc_portfolio_metrics(ls_b).get("sharpe")
+        _v = calc_portfolio_metrics(ls_b, rf_daily=0.0).get("sharpe")  # LS is zero-cost
         sharpe_b = float(_v) if _v is not None else np.nan
     except Exception:
         sharpe_b = np.nan
@@ -219,7 +219,7 @@ def _evaluate_fold(
         qport_a = build_quantile_portfolios(composite_oos_a, r_oos,
                                             n_quantiles=n_quantiles, min_stocks=min_stocks)
         ls_a = qport_a.get("LS", pd.Series(dtype=float))
-        _v = calc_portfolio_metrics(ls_a).get("sharpe")
+        _v = calc_portfolio_metrics(ls_a, rf_daily=0.0).get("sharpe")  # LS is zero-cost
         sharpe_a = float(_v) if _v is not None else np.nan
     except Exception:
         sharpe_a = np.nan

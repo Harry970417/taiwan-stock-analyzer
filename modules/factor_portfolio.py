@@ -451,7 +451,16 @@ def calc_all_factors_execution_aligned_ic(
 # 2. 累積報酬
 # ---------------------------------------------------------------------------
 
-def calc_cumulative_returns(quantile_df: pd.DataFrame) -> pd.DataFrame:
+def _non_overlapping(df_or_series, lag: int):
+    """lag-session forward returns sampled every session overlap (each one spans
+    `lag` sessions). Compounding them as if they were 1-session returns inflates
+    CAGR/vol/Sharpe roughly `lag`-fold, so keep every lag-th row only."""
+    if lag < 1:
+        raise ValueError("lag must be >= 1")
+    return df_or_series.iloc[::lag]
+
+
+def calc_cumulative_returns(quantile_df: pd.DataFrame, lag: int = 1) -> pd.DataFrame:
     """
     從每日報酬計算累積報酬曲線（複利計算）。
 
@@ -462,7 +471,7 @@ def calc_cumulative_returns(quantile_df: pd.DataFrame) -> pd.DataFrame:
     """
     if quantile_df.empty:
         return pd.DataFrame()
-    cum = (1.0 + quantile_df.fillna(0.0)).cumprod() - 1.0
+    cum = (1.0 + _non_overlapping(quantile_df, lag).fillna(0.0)).cumprod() - 1.0
     return cum
 
 
@@ -470,20 +479,22 @@ def calc_cumulative_returns(quantile_df: pd.DataFrame) -> pd.DataFrame:
 # 3. 組合績效統計
 # ---------------------------------------------------------------------------
 
-def calc_portfolio_metrics(returns: pd.Series, rf_daily: float = 1.5 / 252 / 100) -> dict:
+def calc_portfolio_metrics(returns: pd.Series, rf_daily: float = 1.5 / 252 / 100, lag: int = 1) -> dict:
     """
     計算單一時序報酬的主要績效指標。
 
     Parameters
     ----------
     returns   : pd.Series  每日報酬（非累積）
-    rf_daily  : float      日無風險利率（預設 1.5% 年化）
+    rf_daily  : float      日無風險利率（預設 1.5% 年化）；零成本 L/S 組合應傳 0
+    lag       : int        returns 為 lag 日前瞻報酬時，取不重疊樣本並以 248/lag 年化
 
     Returns
     -------
     dict: annual_return, annual_vol, sharpe, max_drawdown, win_rate, n_obs
     """
-    ret = returns.dropna()
+    ret = _non_overlapping(returns, lag).dropna()
+    periods_per_year = ANNUAL_FACTOR / lag
     n = len(ret)
     if n < 5:
         return {
@@ -500,15 +511,15 @@ def calc_portfolio_metrics(returns: pd.Series, rf_daily: float = 1.5 / 252 / 100
     # interchangeable. rf_daily * 252 recovers the annual risk-free rate the
     # caller intended (the default's own derivation), passed to
     # sharpe_ratio's risk_free_rate parameter.
-    annual_ret = _qf_cagr(ret, periods_per_year=ANNUAL_FACTOR)
-    annual_vol = _qf_annualized_volatility(ret, periods_per_year=ANNUAL_FACTOR)
-    sharpe = _qf_sharpe_ratio(ret, periods_per_year=ANNUAL_FACTOR, risk_free_rate=rf_daily * 252)
+    annual_ret = _qf_cagr(ret, periods_per_year=periods_per_year)
+    annual_vol = _qf_annualized_volatility(ret, periods_per_year=periods_per_year)
+    sharpe = _qf_sharpe_ratio(ret, periods_per_year=periods_per_year, risk_free_rate=rf_daily * 252)
     if sharpe is None:
         sharpe = 0.0
 
     # 最大回撤
     nav = (1 + ret).cumprod()
-    max_dd = _qf_max_drawdown(nav)
+    max_dd = _qf_max_drawdown(nav, day_zero_basis=1.0)  # a first-period loss is a drawdown too
 
     win_rate = float((ret > 0).mean())
 
@@ -526,7 +537,7 @@ def calc_portfolio_metrics(returns: pd.Series, rf_daily: float = 1.5 / 252 / 100
 # 4. 所有分位組合的績效摘要
 # ---------------------------------------------------------------------------
 
-def calc_all_quantile_metrics(quantile_df: pd.DataFrame) -> dict:
+def calc_all_quantile_metrics(quantile_df: pd.DataFrame, lag: int = 1) -> dict:
     """
     對 build_quantile_portfolios 輸出的每個欄位計算績效指標。
 
@@ -536,7 +547,12 @@ def calc_all_quantile_metrics(quantile_df: pd.DataFrame) -> dict:
     """
     metrics = {}
     for col in quantile_df.columns:
-        metrics[col] = calc_portfolio_metrics(quantile_df[col])
+        # LS = Q_high - Q_low is self-financing: its return is already an
+        # excess return, so subtracting rf again would understate its Sharpe.
+        if col == "LS":
+            metrics[col] = calc_portfolio_metrics(quantile_df[col], rf_daily=0.0, lag=lag)
+        else:
+            metrics[col] = calc_portfolio_metrics(quantile_df[col], lag=lag)
     return metrics
 
 
@@ -641,8 +657,8 @@ def run_factor_portfolio_analysis(
         empty["error"] = f"有效截面不足（每個截面需 ≥{min_stocks} 檔股票）"
         return empty
 
-    cum_df = calc_cumulative_returns(q_df)
-    all_metrics = calc_all_quantile_metrics(q_df)
+    cum_df = calc_cumulative_returns(q_df, lag=lag)
+    all_metrics = calc_all_quantile_metrics(q_df, lag=lag)
     metrics_df = quantile_metrics_to_df(all_metrics)
 
     return {

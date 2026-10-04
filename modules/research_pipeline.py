@@ -514,8 +514,8 @@ class ResearchPipeline:
                     self._log(f"    SKIP {FACTOR_ZH.get(fname, fname)}：有效截面不足")
                     continue
 
-                cum_df  = calc_cumulative_returns(q_df)
-                metrics = calc_all_quantile_metrics(q_df)
+                cum_df  = calc_cumulative_returns(q_df, lag=self.lag)
+                metrics = calc_all_quantile_metrics(q_df, lag=self.lag)
 
                 self.portfolio_results[fname] = {
                     "quantile_df":   q_df,
